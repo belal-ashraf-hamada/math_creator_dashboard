@@ -834,7 +834,10 @@ function getPersona() {
 async function callGemini(prompt) {
   if (!API_KEY) { alert('⚠️ أضف Gemini API Key الأول في الـ Sidebar'); throw new Error('No API key'); }
   
-  // الحيلة هنا: هنستخدم رابط الـ v1 المستقر تماماً مع الموديل بدون كلمة models/
+  // دمج كاريزما نيوتن والتعليمات مع الطلب الحالي في سياق واحد مجمع
+  const fullPrompt = `System Instructions:\n${getPersona()}\n\nUser Request:\n${prompt}`;
+
+  // الرابط شغال تمام على v1
   const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -842,7 +845,7 @@ async function callGemini(prompt) {
       contents: [
         {
           parts: [
-            { text: `${getPersona()}\n\nالمطلوب:\n${prompt}` }
+            { text: fullPrompt }
           ]
         }
       ],
