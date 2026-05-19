@@ -244,91 +244,182 @@ label{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-botto
   <div class="page-header">
     <div class="page-title">
       🏠 الداشبورد
-      <div class="sub">نظرة عامة على أداء حساباتك</div>
+      <div class="sub">بيانات حساباتك مباشرة — تُحدَّث تلقائياً</div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <span class="plat yt">▶ يوتيوب</span>
-      <span class="plat tt">♪ تيك توك</span>
-      <span class="plat fb">f فيسبوك</span>
-      <span class="plat ig">📷 إنستغرام</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div id="last-refresh" style="font-size:11px;color:var(--mut)">لم يتم التحديث بعد</div>
+      <button class="btn btn-ghost" onclick="refreshAll()" id="btn-refresh" style="padding:7px 14px;font-size:12px">🔄 تحديث الكل</button>
     </div>
   </div>
 
-  <div class="grid4">
+  <!-- API KEYS SETUP -->
+  <div class="card" id="setup-card">
+    <div class="card-title">⚙️ إعداد الحسابات — مرة واحدة فقط</div>
+    <div class="alert info" style="margin-bottom:16px">
+      🔑 أضف بياناتك مرة واحدة وهيتحفظوا — الداشبورد هيتحدث تلقائياً في كل مرة
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+      <!-- YouTube -->
+      <div style="background:var(--s3);border-radius:12px;padding:14px;border:1px solid #ff000022">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span class="plat yt">▶ يوتيوب</span>
+          <span id="yt-status" style="font-size:11px;color:var(--mut)">غير متصل</span>
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <label>YouTube Data API Key</label>
+          <input type="password" id="yt-api-key" placeholder="AIza..." oninput="saveSetup()">
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <label>Channel ID أو رابط القناة</label>
+          <input type="text" id="yt-channel" placeholder="UCxxxxxxxx أو https://youtube.com/@..." oninput="saveSetup()">
+        </div>
+        <button class="btn btn-ghost" onclick="testYoutube()" style="width:100%;font-size:12px">🔗 اتصال واختبار</button>
+      </div>
+
+      <!-- TikTok Manual -->
+      <div style="background:var(--s3);border-radius:12px;padding:14px;border:1px solid #ff6b8a22">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span class="plat tt">♪ تيك توك</span>
+          <span style="font-size:10px;color:var(--mut);background:var(--s2);padding:2px 6px;border-radius:4px">يدوي</span>
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <label>رابط الحساب أو اليوزرنيم</label>
+          <input type="text" id="tt-handle" placeholder="@اسمك أو الرابط" oninput="saveSetup()">
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <label>عدد المتابعين الحالي</label>
+          <input type="text" id="tt-followers" placeholder="مثال: 45000" oninput="saveSetup();updateAllStats()">
+        </div>
+        <div style="font-size:10px;color:var(--mut);line-height:1.5">
+          💡 تيك توك مش بيسمح بـ API مجاني للأفراد — حدّث الرقم يدوياً
+        </div>
+      </div>
+
+      <!-- Facebook -->
+      <div style="background:var(--s3);border-radius:12px;padding:14px;border:1px solid #1877f222">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span class="plat fb">f فيسبوك</span>
+          <span style="font-size:10px;color:var(--mut);background:var(--s2);padding:2px 6px;border-radius:4px">يدوي</span>
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <label>رابط الصفحة</label>
+          <input type="text" id="fb-url" placeholder="https://facebook.com/..." oninput="saveSetup()">
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <label>عدد المتابعين الحالي</label>
+          <input type="text" id="fb-followers" placeholder="مثال: 18000" oninput="saveSetup();updateAllStats()">
+        </div>
+        <div style="font-size:10px;color:var(--mut);line-height:1.5">
+          💡 فيسبوك محتاج Business App للـ API — حدّث الرقم يدوياً
+        </div>
+      </div>
+
+      <!-- Instagram -->
+      <div style="background:var(--s3);border-radius:12px;padding:14px;border:1px solid #e1306c22">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span class="plat ig">📷 إنستغرام</span>
+          <span style="font-size:10px;color:var(--mut);background:var(--s2);padding:2px 6px;border-radius:4px">يدوي</span>
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <label>رابط الحساب</label>
+          <input type="text" id="ig-url" placeholder="https://instagram.com/..." oninput="saveSetup()">
+        </div>
+        <div class="form-row" style="margin-bottom:8px">
+          <label>عدد المتابعين الحالي</label>
+          <input type="text" id="ig-followers" placeholder="مثال: 9000" oninput="saveSetup();updateAllStats()">
+        </div>
+        <div style="font-size:10px;color:var(--mut);line-height:1.5">
+          💡 إنستغرام محتاج Business Account للـ API — حدّث الرقم يدوياً
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;display:flex;gap:10px">
+      <button class="btn btn-acc" onclick="refreshAll()" id="btn-connect" style="flex:1">🚀 تحديث وعرض الداشبورد</button>
+      <button class="btn btn-ghost" onclick="toggleSetup()" style="font-size:12px">طيّ الإعدادات ↑</button>
+    </div>
+  </div>
+
+  <!-- STATS GRID -->
+  <div class="grid4" id="stats-grid">
     <div class="stat">
       <div class="label">👥 إجمالي المتابعين</div>
-      <div class="val" id="stat-followers">—</div>
-      <div class="change flat" id="stat-fchange">أدخل بياناتك ↓</div>
+      <div class="val" id="stat-total">—</div>
+      <div class="change flat" id="stat-total-change">—</div>
     </div>
     <div class="stat">
-      <div class="label">👁 المشاهدات (الشهر)</div>
-      <div class="val" id="stat-views">—</div>
-      <div class="change flat" id="stat-vchange">—</div>
+      <div class="label">▶ يوتيوب</div>
+      <div class="val" id="stat-yt-subs" style="color:#ff6666">—</div>
+      <div style="font-size:11px;color:var(--mut);margin-top:4px" id="stat-yt-views">— مشاهدة إجمالية</div>
     </div>
     <div class="stat">
-      <div class="label">📹 عدد الفيديوهات</div>
-      <div class="val" id="stat-videos">—</div>
-      <div class="change flat" id="stat-vchange2">—</div>
+      <div class="label">📹 فيديوهات يوتيوب</div>
+      <div class="val" id="stat-yt-vids">—</div>
+      <div style="font-size:11px;color:var(--mut);margin-top:4px" id="stat-yt-name">—</div>
     </div>
     <div class="stat">
-      <div class="label">💚 معدل التفاعل</div>
-      <div class="val" id="stat-engage">—</div>
-      <div class="change flat" id="stat-echange">—</div>
+      <div class="label">📱 منصات أخرى</div>
+      <div class="val" id="stat-other">—</div>
+      <div class="change flat">تيك توك + فيسبوك + إنستغرام</div>
     </div>
   </div>
 
-  <div class="grid2">
-    <div class="card">
-      <div class="card-title">📥 أدخل بياناتك</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div class="form-row"><label>إجمالي المتابعين (كل المنصات)</label><input type="text" id="inp-followers" placeholder="مثال: 45000"></div>
-        <div class="form-grid">
-          <div class="form-row"><label>مشاهدات هذا الشهر</label><input type="text" id="inp-views" placeholder="مثال: 120000"></div>
-          <div class="form-row"><label>عدد الفيديوهات</label><input type="text" id="inp-videos" placeholder="مثال: 87"></div>
-        </div>
-        <div class="form-grid">
-          <div class="form-row"><label>متابعين الشهر السابق</label><input type="text" id="inp-prev-followers" placeholder="مثال: 40000"></div>
-          <div class="form-row"><label>معدل التفاعل %</label><input type="text" id="inp-engage" placeholder="مثال: 4.2"></div>
-        </div>
-        <button class="btn btn-acc" onclick="updateDashboard()">✅ تحديث الداشبورد</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">🤖 تحليل ذكي بـ Gemini</div>
-      <div id="dash-ai-output" class="output-box empty">أدخل بياناتك واضغط "تحليل ذكي"</div>
-      <div style="margin-top:12px;display:flex;gap:8px">
-        <button class="btn btn-acc" onclick="analyzeDashboard()" id="btn-dash-analyze">🔍 تحليل ذكي</button>
-        <button class="btn btn-ghost" onclick="copyOutput('dash-ai-output')">📋 نسخ</button>
-      </div>
-    </div>
-  </div>
-
+  <!-- PLATFORMS BAR -->
   <div class="card">
-    <div class="card-title">📈 نمو المنصات</div>
-    <div style="display:flex;flex-direction:column;gap:14px">
+    <div class="card-title">📊 توزيع المتابعين على المنصات</div>
+    <div style="display:flex;flex-direction:column;gap:14px" id="platforms-bars">
       <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px">▶ يوتيوب</span><span class="plat yt" id="yt-val">—</span></div>
-        <div class="pbar"><div class="pbar-fill" id="yt-bar" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:13px;font-weight:600">▶ يوتيوب</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="plat yt" id="yt-bar-val">—</span>
+            <span id="yt-live-dot" style="width:7px;height:7px;border-radius:50%;background:var(--mut);display:inline-block" title="مباشر من API"></span>
+          </div>
+        </div>
+        <div class="pbar"><div class="pbar-fill" id="yt-bar" style="width:0%;transition:width 1s ease"></div></div>
       </div>
       <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px">♪ تيك توك</span><span class="plat tt" id="tt-val">—</span></div>
-        <div class="pbar"><div class="pbar-fill or" id="tt-bar" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:13px;font-weight:600">♪ تيك توك</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="plat tt" id="tt-bar-val">—</span>
+            <span style="font-size:10px;color:var(--mut)">يدوي</span>
+          </div>
+        </div>
+        <div class="pbar"><div class="pbar-fill or" id="tt-bar" style="width:0%;transition:width 1s ease"></div></div>
       </div>
       <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px">f فيسبوك</span><span class="plat fb" id="fb-val">—</span></div>
-        <div class="pbar"><div class="pbar-fill gr" id="fb-bar" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:13px;font-weight:600">f فيسبوك</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="plat fb" id="fb-bar-val">—</span>
+            <span style="font-size:10px;color:var(--mut)">يدوي</span>
+          </div>
+        </div>
+        <div class="pbar"><div class="pbar-fill gr" id="fb-bar" style="width:0%;transition:width 1s ease"></div></div>
       </div>
       <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px">📷 إنستغرام</span><span class="plat ig" id="ig-val">—</span></div>
-        <div class="pbar"><div class="pbar-fill" id="ig-bar" style="width:0%;background:var(--acc2)"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:13px;font-weight:600">📷 إنستغرام</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="plat ig" id="ig-bar-val">—</span>
+            <span style="font-size:10px;color:var(--mut)">يدوي</span>
+          </div>
+        </div>
+        <div class="pbar"><div class="pbar-fill" id="ig-bar" style="width:0%;background:var(--acc2);transition:width 1s ease"></div></div>
       </div>
     </div>
-    <div style="margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
-      <div class="form-row"><label>يوتيوب</label><input type="text" id="p-yt" placeholder="15000" oninput="updatePlatforms()"></div>
-      <div class="form-row"><label>تيك توك</label><input type="text" id="p-tt" placeholder="20000" oninput="updatePlatforms()"></div>
-      <div class="form-row"><label>فيسبوك</label><input type="text" id="p-fb" placeholder="8000" oninput="updatePlatforms()"></div>
-      <div class="form-row"><label>إنستغرام</label><input type="text" id="p-ig" placeholder="5000" oninput="updatePlatforms()"></div>
+    <button class="btn btn-ghost" onclick="toggleSetup()" style="margin-top:16px;font-size:12px;width:100%" id="show-setup-btn">⚙️ تعديل الإعدادات</button>
+  </div>
+
+  <!-- AI ANALYSIS -->
+  <div class="card">
+    <div class="card-title">🤖 تحليل ذكي بـ Gemini</div>
+    <div id="dash-ai-output" class="output-box empty">اضغط "تحليل ذكي" بعد تحديث البيانات</div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn btn-acc" onclick="analyzeDashboard()" id="btn-dash-analyze">🔍 تحليل ذكي</button>
+      <button class="btn btn-ghost" onclick="copyOutput('dash-ai-output')">📋 نسخ</button>
     </div>
   </div>
 </section>
@@ -833,29 +924,15 @@ function getPersona() {
 // ═══ GEMINI CALL ═══
 async function callGemini(prompt) {
   if (!API_KEY) { alert('⚠️ أضف Gemini API Key الأول في الـ Sidebar'); throw new Error('No API key'); }
-  
-  // دمج كاريزما نيوتن والتعليمات مع الطلب الحالي في سياق واحد مجمع
-  const fullPrompt = `System Instructions:\n${getPersona()}\n\nUser Request:\n${prompt}`;
-
-  // الرابط شغال تمام على v1
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { text: fullPrompt }
-          ]
-        }
-      ],
-      generationConfig: { 
-        temperature: 0.95, 
-        maxOutputTokens: 2048 
-      }
+      systemInstruction: { parts: [{ text: getPersona() }] },
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.95, maxOutputTokens: 2048 }
     })
   });
-  
   if (!res.ok) {
     const err = await res.json();
     throw new Error(err.error?.message || 'API Error');
@@ -863,6 +940,36 @@ async function callGemini(prompt) {
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || 'لا يوجد رد';
 }
+
+// ═══ HELPERS ═══
+function setLoading(btnId, outId, loading) {
+  const btn = document.getElementById(btnId);
+  const out = document.getElementById(outId);
+  if (loading) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> جاري التوليد...';
+    out.classList.remove('empty');
+    out.innerHTML = '<span class="pulse">⏳ Gemini بيكتب...</span>';
+  } else {
+    btn.disabled = false;
+  }
+}
+
+function setOutput(outId, text, resetBtn, btnOriginal) {
+  const out = document.getElementById(outId);
+  out.textContent = text;
+  if (resetBtn) { const btn = document.getElementById(resetBtn); btn.disabled=false; btn.innerHTML=btnOriginal; }
+}
+
+function copyOutput(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = event.currentTarget.innerHTML;
+    event.currentTarget.innerHTML = '✅ تم النسخ';
+    setTimeout(() => event.currentTarget.innerHTML = orig, 1500);
+  });
+}
+
 // ═══ DASHBOARD ═══
 function updateDashboard() {
   const f = parseInt(document.getElementById('inp-followers').value.replace(/,/g,''))||0;
