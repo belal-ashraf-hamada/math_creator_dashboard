@@ -834,21 +834,15 @@ function getPersona() {
 async function callGemini(prompt) {
   if (!API_KEY) { alert('⚠️ أضف Gemini API Key الأول في الـ Sidebar'); throw new Error('No API key'); }
   
-  // استخدام إصدار v1 المستقر
+  // الحيلة هنا: هنستخدم رابط الـ v1 المستقر تماماً مع الموديل بدون كلمة models/
   const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      // التأكد من الصيغة الصحيحة للتعليمات النظامية
-      systemInstruction: {
-        parts: [
-          { text: getPersona() }
-        ]
-      },
       contents: [
         {
           parts: [
-            { text: prompt }
+            { text: `${getPersona()}\n\nالمطلوب:\n${prompt}` }
           ]
         }
       ],
@@ -866,35 +860,6 @@ async function callGemini(prompt) {
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || 'لا يوجد رد';
 }
-// ═══ HELPERS ═══
-function setLoading(btnId, outId, loading) {
-  const btn = document.getElementById(btnId);
-  const out = document.getElementById(outId);
-  if (loading) {
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> جاري التوليد...';
-    out.classList.remove('empty');
-    out.innerHTML = '<span class="pulse">⏳ Gemini بيكتب...</span>';
-  } else {
-    btn.disabled = false;
-  }
-}
-
-function setOutput(outId, text, resetBtn, btnOriginal) {
-  const out = document.getElementById(outId);
-  out.textContent = text;
-  if (resetBtn) { const btn = document.getElementById(resetBtn); btn.disabled=false; btn.innerHTML=btnOriginal; }
-}
-
-function copyOutput(id) {
-  const text = document.getElementById(id).textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    const orig = event.currentTarget.innerHTML;
-    event.currentTarget.innerHTML = '✅ تم النسخ';
-    setTimeout(() => event.currentTarget.innerHTML = orig, 1500);
-  });
-}
-
 // ═══ DASHBOARD ═══
 function updateDashboard() {
   const f = parseInt(document.getElementById('inp-followers').value.replace(/,/g,''))||0;
