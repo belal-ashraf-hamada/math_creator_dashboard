@@ -232,6 +232,14 @@ label{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-botto
   <div class="api-bar">
     <label>🔑 Gemini API Key</label>
     <input type="password" id="apiKey" placeholder="AIza..." oninput="checkApiKey()">
+    <div style="margin-top:8px">
+      <label style="margin-bottom:4px">🤖 الموديل</label>
+      <select id="gemini-model" style="font-size:11px;padding:6px 8px">
+        <option value="gemini-2.5-flash">gemini-2.5-flash ✨ (الأحدث)</option>
+        <option value="gemini-2.5-flash-lite-preview-06-17">gemini-2.5-flash-lite (أسرع)</option>
+        <option value="gemini-1.5-flash">gemini-1.5-flash (قديم)</option>
+      </select>
+    </div>
     <div class="api-status idle" id="apiStatus">أضف الـ API Key للبدء</div>
   </div>
 </aside>
@@ -924,7 +932,8 @@ function getPersona() {
 // ═══ GEMINI CALL ═══
 async function callGemini(prompt) {
   if (!API_KEY) { alert('⚠️ أضف Gemini API Key الأول في الـ Sidebar'); throw new Error('No API key'); }
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+  const model = document.getElementById('gemini-model')?.value || 'gemini-2.5-flash';
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
