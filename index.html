@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة المبدع — أستاذ الرياضيات</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0b0b12;--surface:#13131e;--s2:#1c1c2e;--s3:#24243a;
+  --b1:#ffffff0d;--b2:#ffffff18;--b3:#ffffff28;
+  --acc:#7c6fff;--acc2:#ff6b8a;--acc3:#38ef7d;--gold:#ffc94d;
+  --txt:#eeeeff;--mut:#7777aa;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:'Cairo',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--b1) 1px,transparent 1px),linear-gradient(90deg,var(--b1) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+.blob{position:fixed;border-radius:50%;filter:blur(130px);opacity:.1;pointer-events:none;z-index:0}
+.b1{width:700px;height:700px;background:var(--acc);top:-250px;right:-200px}
+.b2{width:500px;height:500px;background:var(--acc2);bottom:-150px;left:-150px}
+
+/* SHELL */
+.shell{position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{background:var(--surface);border-left:1px solid var(--b2);padding:20px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.logo{font-size:18px;font-weight:900;padding:10px 14px 20px;border-bottom:1px solid var(--b2);margin-bottom:10px;line-height:1.3}
+.logo .sub{font-size:11px;font-weight:400;color:var(--mut);margin-top:2px}
+.logo span{color:var(--acc)}
+.nav-section{font-size:10px;font-weight:700;color:var(--mut);padding:12px 14px 4px;letter-spacing:.12em;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--mut);transition:all .18s;border:1px solid transparent}
+.nav-item:hover{color:var(--txt);background:var(--s2)}
+.nav-item.active{color:var(--txt);background:var(--s2);border-color:var(--b3)}
+.nav-item .ico{font-size:16px;width:20px;text-align:center}
+.nav-item .badge{margin-right:auto;background:var(--acc);color:#fff;font-size:10px;padding:2px 7px;border-radius:20px}
+
+/* API BAR */
+.api-bar{margin-top:auto;padding:14px;background:var(--s2);border-radius:12px;border:1px solid var(--b2)}
+.api-bar label{font-size:11px;color:var(--mut);display:block;margin-bottom:6px}
+.api-bar input{width:100%;background:var(--s3);border:1px solid var(--b3);border-radius:8px;padding:8px 10px;color:var(--txt);font-size:12px;font-family:'Cairo',sans-serif;outline:none}
+.api-bar input:focus{border-color:var(--acc)}
+.api-status{font-size:11px;margin-top:6px;padding:4px 8px;border-radius:6px;text-align:center;font-weight:600}
+.api-status.ok{background:#38ef7d18;color:var(--acc3)}
+.api-status.err{background:#ff6b8a18;color:var(--acc2)}
+.api-status.idle{background:var(--b1);color:var(--mut)}
+
+/* MAIN */
+.main{padding:28px;display:flex;flex-direction:column;gap:24px;overflow-y:auto;min-height:100vh}
+
+/* PAGE */
+.page{display:none}
+.page.active{display:flex;flex-direction:column;gap:20px}
+
+/* PAGE HEADER */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.page-title{font-size:26px;font-weight:900;line-height:1.2}
+.page-title .sub{font-size:13px;font-weight:400;color:var(--mut);margin-top:4px}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--b2);border-radius:16px;padding:20px}
+.card-title{font-size:13px;font-weight:700;color:var(--mut);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* STAT CARD */
+.stat{background:var(--surface);border:1px solid var(--b2);border-radius:14px;padding:16px 18px}
+.stat .label{font-size:11px;color:var(--mut);font-weight:700;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.stat .val{font-size:28px;font-weight:900;font-family:'Space Mono',monospace;line-height:1}
+.stat .change{font-size:11px;margin-top:6px;font-weight:600}
+.change.up{color:var(--acc3)}.change.down{color:var(--acc2)}.change.flat{color:var(--mut)}
+
+/* PLATFORM BADGE */
+.plat{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.plat.yt{background:#ff000022;color:#ff4444}
+.plat.tt{background:#ff6b8a22;color:#ff6b8a}
+.plat.fb{background:#1877f222;color:#4d9fff}
+.plat.ig{background:#e1306c22;color:#e1306c}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:'Cairo',sans-serif;transition:all .18s}
+.btn-acc{background:var(--acc);color:#fff}
+.btn-acc:hover{background:#9088ff}
+.btn-ghost{background:var(--s2);color:var(--txt);border:1px solid var(--b3)}
+.btn-ghost:hover{border-color:var(--acc);color:var(--acc)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* FORM ELEMENTS */
+select,textarea,input[type=text]{background:var(--s2);border:1px solid var(--b3);border-radius:10px;padding:10px 14px;color:var(--txt);font-size:13px;font-family:'Cairo',sans-serif;outline:none;width:100%;transition:border .18s}
+select:focus,textarea:focus,input[type=text]:focus{border-color:var(--acc)}
+textarea{resize:vertical;min-height:90px;line-height:1.6}
+label{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-bottom:6px}
+.form-row{display:flex;flex-direction:column;gap:6px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* TAG */
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:var(--s3);color:var(--mut)}
+.tag.acc{background:var(--acc)22;color:var(--acc)}
+.tag.gr{background:#38ef7d18;color:var(--acc3)}
+
+/* OUTPUT BOX */
+.output-box{background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:18px;font-size:14px;line-height:1.9;color:var(--txt);min-height:120px;white-space:pre-wrap;direction:rtl}
+.output-box.empty{display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:13px;min-height:160px;border-style:dashed}
+
+/* SPINNER */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:20px;height:20px;border:2px solid var(--b3);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+
+/* SCRIPT CARDS */
+.script-card{background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:16px;transition:border .18s;cursor:default}
+.script-card:hover{border-color:var(--b3)}
+.script-card .hook{font-weight:700;color:var(--gold);margin-bottom:8px;font-size:13px}
+.script-card .body-text{font-size:13px;line-height:1.8;color:var(--txt)}
+.script-card .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.copy-btn{float:left;background:var(--s3);border:none;border-radius:6px;padding:4px 10px;color:var(--mut);font-size:11px;cursor:pointer;font-family:'Cairo',sans-serif;transition:all .15s}
+.copy-btn:hover{color:var(--txt);background:var(--acc)}
+
+/* VIDEO TABLE */
+.vtable{width:100%;border-collapse:collapse}
+.vtable th{font-size:11px;color:var(--mut);font-weight:700;text-align:right;padding:8px 12px;border-bottom:1px solid var(--b2)}
+.vtable td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--b1);vertical-align:middle}
+.vtable tr:last-child td{border-bottom:none}
+.vtable tr:hover td{background:var(--b1)}
+.score{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;font-size:12px;font-weight:900;font-family:'Space Mono',monospace}
+.score.high{background:#38ef7d18;color:var(--acc3)}
+.score.mid{background:#ffc94d18;color:var(--gold)}
+.score.low{background:#ff6b8a18;color:var(--acc2)}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--s2);border-radius:12px;padding:4px}
+.tab{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;color:var(--mut);transition:all .18s;border:none;background:none;font-family:'Cairo',sans-serif}
+.tab.active{background:var(--surface);color:var(--txt)}
+
+/* PROGRESS BAR */
+.pbar{background:var(--s3);border-radius:20px;height:6px;overflow:hidden;margin-top:4px}
+.pbar-fill{height:100%;border-radius:20px;background:var(--acc);transition:width .8s ease}
+.pbar-fill.gr{background:var(--acc3)}
+.pbar-fill.or{background:var(--gold)}
+
+/* ALERT */
+.alert{border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.6;border:1px solid}
+.alert.info{background:#7c6fff12;border-color:#7c6fff30;color:#b0a8ff}
+.alert.warn{background:#ffc94d12;border-color:#ffc94d30;color:#ffc94d}
+.alert.suc{background:#38ef7d12;border-color:#38ef7d30;color:#38ef7d}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--b2);margin:4px 0}
+
+/* SCROLL */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b3);border-radius:10px}
+
+/* PULSE */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.pulse{animation:pulse 1.5s infinite}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .grid4{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div>🧮 <span>المبدع</span></div>
+    <div class="sub">لوحة تحكم محتوى الرياضيات</div>
+  </div>
+
+  <div class="nav-section">المحتوى</div>
+  <div class="nav-item active" onclick="showPage('content')">
+    <span class="ico">✍️</span> مولد المحتوى
+  </div>
+  <div class="nav-item" onclick="showPage('scripts')">
+    <span class="ico">🎬</span> الاسكريبتات
+  </div>
+  <div class="nav-item" onclick="showPage('ideas')">
+    <span class="ico">💡</span> بنك الأفكار
+  </div>
+  <div class="nav-item" onclick="showPage('hooks')">
+    <span class="ico">⚡</span> مولد الـ Hooks
+  </div>
+  <div class="nav-item" onclick="showPage('recycle')">
+    <span class="ico">♻️</span> إعادة التدوير
+  </div>
+
+  <div class="nav-section">التحليل</div>
+  <div class="nav-item" onclick="showPage('analytics')">
+    <span class="ico">📊</span> تحليل الفيديوهات
+  </div>
+  <div class="nav-item" onclick="showPage('comments')">
+    <span class="ico">💬</span> صائد التعليقات
+  </div>
+  <div class="nav-item" onclick="showPage('trends')">
+    <span class="ico">🔥</span> رادار التريندات
+  </div>
+
+  <div class="nav-section">الحساب</div>
+  <div class="nav-item" onclick="showPage('dashboard')">
+    <span class="ico">🏠</span> الداشبورد
+  </div>
+  <div class="nav-item" onclick="showPage('schedule')">
+    <span class="ico">📅</span> جدول النشر
+  </div>
+
+  <div style="margin-top:auto"></div>
+
+  <div class="api-bar" style="margin-bottom:10px;border-color:#7c6fff44">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <label style="margin:0;color:var(--acc)">🧠 روح نيوتن</label>
+      <button onclick="togglePersona()" id="persona-toggle" style="background:var(--acc);border:none;border-radius:6px;padding:2px 8px;color:#fff;font-size:10px;cursor:pointer;font-family:Cairo,sans-serif;font-weight:700">تعديل</button>
+    </div>
+    <div id="persona-preview" style="font-size:11px;color:var(--acc3);line-height:1.5">
+      ✅ كاريزما نيوتن مفعّلة في كل الأقسام
+    </div>
+    <textarea id="persona-text" style="display:none;min-height:130px;font-size:11px;margin-top:8px;line-height:1.6;background:var(--bg);border-color:#7c6fff44"></textarea>
+    <div id="persona-actions" style="display:none;gap:6px;margin-top:6px">
+      <button onclick="savePersona()" style="background:var(--acc);border:none;border-radius:6px;padding:4px 10px;color:#fff;font-size:11px;cursor:pointer;font-family:Cairo,sans-serif;font-weight:700">💾 حفظ</button>
+      <button onclick="resetPersona()" style="background:var(--s3);border:1px solid var(--b3);border-radius:6px;padding:4px 10px;color:var(--mut);font-size:11px;cursor:pointer;font-family:Cairo,sans-serif">↺ إعادة تعيين</button>
+    </div>
+  </div>
+
+  <div class="api-bar">
+    <label>🔑 Gemini API Key</label>
+    <input type="password" id="apiKey" placeholder="AIza..." oninput="checkApiKey()">
+    <div class="api-status idle" id="apiStatus">أضف الـ API Key للبدء</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<section class="page active" id="page-dashboard">
+  <div class="page-header">
+    <div class="page-title">
+      🏠 الداشبورد
+      <div class="sub">نظرة عامة على أداء حساباتك</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="plat yt">▶ يوتيوب</span>
+      <span class="plat tt">♪ تيك توك</span>
+      <span class="plat fb">f فيسبوك</span>
+      <span class="plat ig">📷 إنستغرام</span>
+    </div>
+  </div>
+
+  <div class="grid4">
+    <div class="stat">
+      <div class="label">👥 إجمالي المتابعين</div>
+      <div class="val" id="stat-followers">—</div>
+      <div class="change flat" id="stat-fchange">أدخل بياناتك ↓</div>
+    </div>
+    <div class="stat">
+      <div class="label">👁 المشاهدات (الشهر)</div>
+      <div class="val" id="stat-views">—</div>
+      <div class="change flat" id="stat-vchange">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">📹 عدد الفيديوهات</div>
+      <div class="val" id="stat-videos">—</div>
+      <div class="change flat" id="stat-vchange2">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">💚 معدل التفاعل</div>
+      <div class="val" id="stat-engage">—</div>
+      <div class="change flat" id="stat-echange">—</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">📥 أدخل بياناتك</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="form-row"><label>إجمالي المتابعين (كل المنصات)</label><input type="text" id="inp-followers" placeholder="مثال: 45000"></div>
+        <div class="form-grid">
+          <div class="form-row"><label>مشاهدات هذا الشهر</label><input type="text" id="inp-views" placeholder="مثال: 120000"></div>
+          <div class="form-row"><label>عدد الفيديوهات</label><input type="text" id="inp-videos" placeholder="مثال: 87"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-row"><label>متابعين الشهر السابق</label><input type="text" id="inp-prev-followers" placeholder="مثال: 40000"></div>
+          <div class="form-row"><label>معدل التفاعل %</label><input type="text" id="inp-engage" placeholder="مثال: 4.2"></div>
+        </div>
+        <button class="btn btn-acc" onclick="updateDashboard()">✅ تحديث الداشبورد</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🤖 تحليل ذكي بـ Gemini</div>
+      <div id="dash-ai-output" class="output-box empty">أدخل بياناتك واضغط "تحليل ذكي"</div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn btn-acc" onclick="analyzeDashboard()" id="btn-dash-analyze">🔍 تحليل ذكي</button>
+        <button class="btn btn-ghost" onclick="copyOutput('dash-ai-output')">📋 نسخ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📈 نمو المنصات</div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px">▶ يوتيوب</span><span class="plat yt" id="yt-val">—</span></div>
+        <div class="pbar"><div class="pbar-fill" id="yt-bar" style="width:0%"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px">♪ تيك توك</span><span class="plat tt" id="tt-val">—</span></div>
+        <div class="pbar"><div class="pbar-fill or" id="tt-bar" style="width:0%"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px">f فيسبوك</span><span class="plat fb" id="fb-val">—</span></div>
+        <div class="pbar"><div class="pbar-fill gr" id="fb-bar" style="width:0%"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px">📷 إنستغرام</span><span class="plat ig" id="ig-val">—</span></div>
+        <div class="pbar"><div class="pbar-fill" id="ig-bar" style="width:0%;background:var(--acc2)"></div></div>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+      <div class="form-row"><label>يوتيوب</label><input type="text" id="p-yt" placeholder="15000" oninput="updatePlatforms()"></div>
+      <div class="form-row"><label>تيك توك</label><input type="text" id="p-tt" placeholder="20000" oninput="updatePlatforms()"></div>
+      <div class="form-row"><label>فيسبوك</label><input type="text" id="p-fb" placeholder="8000" oninput="updatePlatforms()"></div>
+      <div class="form-row"><label>إنستغرام</label><input type="text" id="p-ig" placeholder="5000" oninput="updatePlatforms()"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CONTENT GENERATOR ═══════════════ -->
+<section class="page" id="page-content">
+  <div class="page-header">
+    <div class="page-title">
+      ✍️ مولد المحتوى الذكي
+      <div class="sub">اكتب الدرس وGemini يصنعلك محتوى لا متناهي</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">⚙️ إعدادات المحتوى</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="form-row">
+          <label>الدرس أو الموضوع</label>
+          <input type="text" id="c-topic" placeholder="مثال: المشتقات، المصفوفات، المتتاليات الهندسية...">
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>المنصة</label>
+            <select id="c-platform">
+              <option value="youtube">▶ يوتيوب (فيديو طويل)</option>
+              <option value="tiktok">♪ تيك توك (60 ثانية)</option>
+              <option value="facebook">f فيسبوك</option>
+              <option value="instagram">📷 إنستغرام ريلز</option>
+              <option value="all">🌐 الكل (أفكار مختلفة)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>نوع المحتوى</label>
+            <select id="c-type">
+              <option value="script">🎬 اسكريبت كامل بالثواني</option>
+              <option value="hook">⚡ Hook صادم</option>
+              <option value="ideas">💡 5 أفكار فيديوهات</option>
+              <option value="story">🎭 قصة/سيناريو درامي</option>
+              <option value="challenge">🧩 تحدي/لغز تفاعلي</option>
+              <option value="trend">🔥 ربط بتريند تقني</option>
+              <option value="engagement">💬 خناقة تعليقات</option>
+              <option value="visual">🎨 أفكار Manim/بايثون</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label>المرحلة الدراسية</label>
+            <select id="c-level">
+              <option>ابتدائي</option>
+              <option selected>إعدادي / ثانوي</option>
+              <option>جامعي</option>
+              <option>مختلط</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>الأسلوب</label>
+            <select id="c-style">
+              <option>مثير وسريع (Gen Z)</option>
+              <option selected>تعليمي ممتع</option>
+              <option>دراما وغموض</option>
+              <option>تحدي وألغاز</option>
+              <option>قصة وثائقية</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>معلومات إضافية (اختياري)</label>
+          <textarea id="c-extra" placeholder="أي تفاصيل خاصة؟ مثال: الطلاب بيغلطوا في خطوة معينة، أو عايز تربطه بالـ AI..."></textarea>
+        </div>
+        <button class="btn btn-acc" onclick="generateContent()" id="btn-gen-content" style="width:100%">
+          🚀 ولّد المحتوى
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🤖 المحتوى المُولَّد</div>
+      <div id="content-output" class="output-box empty">اختر الإعدادات وابدأ التوليد...</div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="copyOutput('content-output')">📋 نسخ</button>
+        <button class="btn btn-ghost" onclick="saveToBank()">💾 حفظ في البنك</button>
+        <button class="btn btn-ghost" onclick="generateContent()">🔄 إعادة توليد</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚡ توليد سريع — أفكار متعددة دفعة واحدة</div>
+    <div class="alert info" style="margin-bottom:14px">
+      💡 اكتب الموضوع واضغط "توليد ضخم" وهيطلعلك 10 أفكار فيديوهات كاملة لكل المنصات دفعة واحدة
+    </div>
+    <div style="display:flex;gap:10px">
+      <input type="text" id="bulk-topic" placeholder="الموضوع (مثال: المثلثات)" style="flex:1">
+      <button class="btn btn-acc" onclick="bulkGenerate()" id="btn-bulk">💥 توليد ضخم (10 أفكار)</button>
+    </div>
+    <div id="bulk-output" style="margin-top:14px;display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</section>
+
+<!-- ═══════════════ SCRIPTS ═══════════════ -->
+<section class="page" id="page-scripts">
+  <div class="page-header">
+    <div class="page-title">
+      🎬 مولد الاسكريبتات الاحترافية
+      <div class="sub">اسكريبت مقسم بالثانية مع Hook + Retention + CTA</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚙️ إعدادات الاسكريبت</div>
+    <div class="form-grid">
+      <div class="form-row"><label>الموضوع</label><input type="text" id="s-topic" placeholder="مثال: قاعدة المشتقة بالسلسلة"></div>
+      <div class="form-row">
+        <label>المدة</label>
+        <select id="s-duration">
+          <option>30 ثانية (تيك توك/ريلز)</option>
+          <option>60 ثانية</option>
+          <option selected>3-5 دقائق (شرح قصير)</option>
+          <option>10-15 دقيقة (شرح كامل)</option>
+          <option>20+ دقيقة (يوتيوب طويل)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>نوع الـ Hook</label>
+        <select id="s-hook-type">
+          <option>سؤال صادم</option>
+          <option>إحصائية مدهشة</option>
+          <option>خطأ شائع</option>
+          <option>تحدي مستحيل</option>
+          <option>سر مخفي</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>الـ CTA المطلوب</label>
+        <select id="s-cta">
+          <option>متابعة + تعليق</option>
+          <option>حل مسألة في التعليقات</option>
+          <option>شير لصاحبه بيعاني</option>
+          <option>دخول لينك البايو</option>
+          <option>الجزء الجاي</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-acc" onclick="generateScript()" id="btn-script" style="margin-top:14px;width:100%">🎬 ولّد الاسكريبت</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📄 الاسكريبت المُولَّد</div>
+    <div id="script-output" class="output-box empty">اضبط الإعدادات وابدأ التوليد...</div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="copyOutput('script-output')">📋 نسخ</button>
+      <button class="btn btn-ghost" onclick="saveToBank()">💾 حفظ</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ IDEAS BANK ═══════════════ -->
+<section class="page" id="page-ideas">
+  <div class="page-header">
+    <div class="page-title">
+      💡 بنك الأفكار
+      <div class="sub">أفكارك المحفوظة + توليد جديد دايماً</div>
+    </div>
+    <button class="btn btn-acc" onclick="generateIdeas()">🔄 ولّد 10 أفكار جديدة</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚙️ توليد أفكار مخصصة</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-row" style="flex:1">
+        <label>محور الأفكار</label>
+        <select id="ideas-focus">
+          <option>مناهج دراسية</option>
+          <option>ربط بالـ AI والتقنية</option>
+          <option>تحديات وألغاز</option>
+          <option>أخطاء شائعة</option>
+          <option>قصص العلماء</option>
+          <option>Engagement Bait</option>
+          <option>فيديوهات مقارنة</option>
+          <option>مختلط (الكل)</option>
+        </select>
+      </div>
+      <div class="form-row" style="flex:1">
+        <label>المرحلة</label>
+        <select id="ideas-level">
+          <option>ابتدائي</option>
+          <option selected>ثانوي</option>
+          <option>جامعي</option>
+          <option>كل المراحل</option>
+        </select>
+      </div>
+      <button class="btn btn-acc" onclick="generateIdeas()" id="btn-ideas">💡 ولّد الأفكار</button>
+    </div>
+  </div>
+
+  <div id="ideas-list" style="display:flex;flex-direction:column;gap:10px">
+    <div class="alert info">اضغط "ولّد أفكار" للبدء 🚀</div>
+  </div>
+</section>
+
+<!-- ═══════════════ HOOKS ═══════════════ -->
+<section class="page" id="page-hooks">
+  <div class="page-header">
+    <div class="page-title">
+      ⚡ مولد الـ Hooks الصادمة
+      <div class="sub">أول 3 ثواني بتحدد كل حاجة — اعملها صح</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">⚙️ الإعدادات</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="form-row"><label>الموضوع</label><input type="text" id="h-topic" placeholder="مثال: الأعداد المركبة"></div>
+        <div class="form-row">
+          <label>نوع الـ Hook</label>
+          <select id="h-type">
+            <option>كل الأنواع (10 hooks متنوعة)</option>
+            <option>فضول — "سر لا يعرفه أحد"</option>
+            <option>صدمة — "خطأ 90% من الطلاب بيعملوه"</option>
+            <option>تحدي — "حل ده في 10 ثواني"</option>
+            <option>ادعاء صادم — "الرياضيات كذبت عليك"</option>
+            <option>سؤال فلسفي — "ليه أصلاً..."</option>
+            <option>قصة — "كان فيه عالم..."</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>المنصة</label>
+          <select id="h-platform">
+            <option>تيك توك / ريلز</option>
+            <option>يوتيوب شورت</option>
+            <option>يوتيوب طويل</option>
+            <option>فيسبوك</option>
+          </select>
+        </div>
+        <button class="btn btn-acc" onclick="generateHooks()" id="btn-hooks" style="width:100%">⚡ ولّد الـ Hooks</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">⚡ الـ Hooks المُولَّدة</div>
+      <div id="hooks-output" class="output-box empty">ولّد hooks لموضوعك...</div>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('hooks-output')">📋 نسخ الكل</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ RECYCLE ═══════════════ -->
+<section class="page" id="page-recycle">
+  <div class="page-header">
+    <div class="page-title">
+      ♻️ مُعيد التدوير الذكي
+      <div class="sub">فيديو واحد → محتوى لكل المنصات</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📝 المحتوى الأصلي</div>
+    <div class="form-row" style="margin-bottom:12px">
+      <label>الصق نص الفيديو أو ملخصه أو عنوانه</label>
+      <textarea id="recycle-input" placeholder="مثال: شرح كامل لقاعدة L'Hôpital — كيف نحسب النهايات الصعبة عند القسمة على صفر، مع 3 أمثلة من الامتحانات..." style="min-height:120px"></textarea>
+    </div>
+    <button class="btn btn-acc" onclick="recycleContent()" id="btn-recycle">♻️ حوّل لكل المنصات</button>
+  </div>
+
+  <div id="recycle-output" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;display:none">
+    <div class="card" id="r-tiktok">
+      <div class="card-title"><span class="plat tt">♪ تيك توك</span> — سكريبت 60 ثانية</div>
+      <div class="output-box" id="r-tt-text"></div>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('r-tt-text')">📋 نسخ</button>
+    </div>
+    <div class="card" id="r-youtube">
+      <div class="card-title"><span class="plat yt">▶ يوتيوب</span> — شرح + وصف + تاجات</div>
+      <div class="output-box" id="r-yt-text"></div>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('r-yt-text')">📋 نسخ</button>
+    </div>
+    <div class="card" id="r-facebook">
+      <div class="card-title"><span class="plat fb">f فيسبوك</span> — بوست منظم</div>
+      <div class="output-box" id="r-fb-text"></div>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('r-fb-text')">📋 نسخ</button>
+    </div>
+    <div class="card" id="r-instagram">
+      <div class="card-title"><span class="plat ig">📷 إنستغرام</span> — كابشن + هاشتاجات</div>
+      <div class="output-box" id="r-ig-text"></div>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('r-ig-text')">📋 نسخ</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ ANALYTICS ═══════════════ -->
+<section class="page" id="page-analytics">
+  <div class="page-header">
+    <div class="page-title">
+      📊 تحليل الفيديوهات
+      <div class="sub">فاهم — ليه الفيديو ده نجح والتاني فشل؟</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📥 أدخل بيانات فيديوهاتك</div>
+    <div class="alert info" style="margin-bottom:14px">أدخل بيانات 3-10 فيديوهات وGemini هيحلل الأنماط ويقولك الوصفة السرية للنجاح</div>
+    <div id="video-rows">
+      <div class="video-row" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px">
+        <div class="form-row"><label>عنوان الفيديو</label><input type="text" placeholder="عنوان الفيديو..."></div>
+        <div class="form-row"><label>مشاهدات</label><input type="text" placeholder="50000"></div>
+        <div class="form-row"><label>لايكات</label><input type="text" placeholder="2000"></div>
+        <div class="form-row"><label>تعليقات</label><input type="text" placeholder="300"></div>
+        <div class="form-row"><label>retention %</label><input type="text" placeholder="45"></div>
+        <button class="btn btn-ghost" onclick="this.closest('.video-row').remove()" style="margin-bottom:0;height:38px;padding:0 12px">✕</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="addVideoRow()">+ إضافة فيديو</button>
+      <button class="btn btn-acc" onclick="analyzeVideos()" id="btn-analyze">🔍 حلّل الأنماط</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🤖 التحليل الذكي</div>
+    <div id="analytics-output" class="output-box empty">أدخل بيانات فيديوهاتك وابدأ التحليل</div>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('analytics-output')">📋 نسخ</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎯 تحليل فيديو واحد بعمق</div>
+    <div class="form-grid">
+      <div class="form-row"><label>عنوان الفيديو</label><input type="text" id="single-title" placeholder="عنوان الفيديو..."></div>
+      <div class="form-row"><label>رابط الفيديو (للمرجعية)</label><input type="text" id="single-url" placeholder="https://..."></div>
+      <div class="form-row"><label>مشاهدات</label><input type="text" id="single-views" placeholder="50000"></div>
+      <div class="form-row"><label>Retention %</label><input type="text" id="single-ret" placeholder="45"></div>
+      <div class="form-row"><label>لايكات</label><input type="text" id="single-likes" placeholder="2000"></div>
+      <div class="form-row"><label>تعليقات</label><input type="text" id="single-comments" placeholder="300"></div>
+    </div>
+    <div class="form-row" style="margin-top:10px">
+      <label>ما اللي شعرت إنه مش صح في الفيديو ده؟</label>
+      <textarea id="single-notes" placeholder="مثال: الـ Hook كان ضعيف، الإيقاع بطيء في النص، الـ CTA كان مش واضح..."></textarea>
+    </div>
+    <button class="btn btn-acc" onclick="analyzeSingleVideo()" id="btn-single" style="margin-top:10px">🔬 تحليل عميق</button>
+    <div id="single-output" class="output-box empty" style="margin-top:12px">—</div>
+  </div>
+</section>
+
+<!-- ═══════════════ COMMENTS ═══════════════ -->
+<section class="page" id="page-comments">
+  <div class="page-header">
+    <div class="page-title">
+      💬 صائد التعليقات الذهبية
+      <div class="sub">التعليقات = أفكار لا متناهية مجانية</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">📥 الصق تعليقات فيديوهاتك</div>
+      <div class="form-row" style="margin-bottom:12px">
+        <label>الصق التعليقات هنا (كل تعليق في سطر)</label>
+        <textarea id="comments-input" placeholder="مثال:
+ممكن تشرح المشتقة جزئية؟
+مش فاهم ليه بنستخدم e في الرياضيات
+في امتحان عندي بكره وعايز مراجعة سريعة
+أثبت إن 1+1=3 😂
+بسألك على مسألة صعبة..." style="min-height:200px"></textarea>
+      </div>
+      <button class="btn btn-acc" onclick="mineComments()" id="btn-comments" style="width:100%">💎 استخرج الذهب</button>
+    </div>
+    <div class="card">
+      <div class="card-title">💎 التعليقات الذهبية</div>
+      <div id="comments-output" class="output-box empty" style="min-height:240px">الصق التعليقات وابدأ الاستخراج...</div>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('comments-output')">📋 نسخ</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ TRENDS ═══════════════ -->
+<section class="page" id="page-trends">
+  <div class="page-header">
+    <div class="page-title">
+      🔥 رادار التريندات
+      <div class="sub">ربط الرياضيات بأحدث ما يتحدث عنه الشباب</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚙️ الإعدادات</div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>الموضوع الرياضي</label>
+        <input type="text" id="t-topic" placeholder="مثال: المصفوفات، الاحتمالات، المشتقات...">
+      </div>
+      <div class="form-row">
+        <label>مجال التريند</label>
+        <select id="t-trend">
+          <option>الذكاء الاصطناعي والـ AI</option>
+          <option>ألعاب الفيديو</option>
+          <option>التكريبتو والبلوك تشين</option>
+          <option>الأفلام والسلاسل</option>
+          <option>الرياضة</option>
+          <option>الميمز والإنترنت</option>
+          <option>الهواتف والتقنية</option>
+          <option>مختلط (الأفضل من الكل)</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-acc" onclick="generateTrends()" id="btn-trends" style="margin-top:12px">🔥 ولّد ربط التريند</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔥 أفكار الربط بالتريندات</div>
+    <div id="trends-output" class="output-box empty">اختر الموضوع والتريند وابدأ...</div>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('trends-output')">📋 نسخ</button>
+  </div>
+</section>
+
+<!-- ═══════════════ SCHEDULE ═══════════════ -->
+<section class="page" id="page-schedule">
+  <div class="page-header">
+    <div class="page-title">
+      📅 جدول النشر الذكي
+      <div class="sub">خطة نشر أسبوعية كاملة بتوقيتات مثالية</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚙️ إعدادات الجدول</div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>عدد الفيديوهات في الأسبوع</label>
+        <select id="sch-freq">
+          <option>3 فيديوهات</option>
+          <option selected>5 فيديوهات</option>
+          <option>7 فيديوهات (كل يوم)</option>
+          <option>10+ (شيلز متعددة)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>الموسم الدراسي الحالي</label>
+        <select id="sch-season">
+          <option>منتصف الفصل الدراسي</option>
+          <option>قبل الامتحانات (مراجعة)</option>
+          <option>الإجازة الصيفية</option>
+          <option>بداية الفصل الجديد</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:10px">
+      <label>مواضيع الأسبوع الجاي</label>
+      <textarea id="sch-topics" placeholder="مثال: المشتقة، التكامل، النهايات، المتتاليات"></textarea>
+    </div>
+    <button class="btn btn-acc" onclick="generateSchedule()" id="btn-sched" style="margin-top:12px">📅 ولّد الجدول</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📅 جدول الأسبوع</div>
+    <div id="schedule-output" class="output-box empty">ولّد الجدول للبدء...</div>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('schedule-output')">📋 نسخ</button>
+  </div>
+</section>
+
+</main>
+</div>
+
+<script>
+// ═══ STATE ═══
+let API_KEY = '';
+let savedIdeas = [];
+
+// ═══ API KEY ═══
+function checkApiKey() {
+  API_KEY = document.getElementById('apiKey').value.trim();
+  const el = document.getElementById('apiStatus');
+  if (!API_KEY) { el.className='api-status idle'; el.textContent='أضف الـ API Key للبدء'; return; }
+  if (API_KEY.length > 15) { el.className='api-status ok'; el.textContent='✅ جاهز للعمل'; }
+  else { el.className='api-status err'; el.textContent='❌ Key غير صحيح'; }
+}
+
+// ═══ NAVIGATION ═══
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ═══ NEWTON PERSONALITY ═══
+const DEFAULT_PERSONA = `أنت المساعد السري لـ "نيوتن الرياضيات" — صانع المحتوى التعليمي الأقوى في مصر.
+
+هويتك الثابتة في كل ما تكتبه:
+- ابدأ دايماً بـ Hook صاعق يوقف التمرير في أول ثانيتين
+- لغتك عامية مصرية ذكية وقريبة من الشباب — مش فصحى جافة ومش عامية رخيصة
+- ادمج إيفيهات شعبية وتحديات وجمل زي "أنا هتحداك"، "بهدلة كاملة"، "الإجابة هتصدمك"
+- الرياضيات عندك = متعة وفهم وإبداع، مش حفظ وملل
+- أسلوبك فيه كاريزما وثقة وطاقة — زي أستاذ بيحب اللي بيعمله وبيعدي الإحساس ده للطالب
+- الأمثلة دايماً من الحياة والتريندات، مش من الكتب المدرسية الجافة
+- كل محتوى بيطلع منك لازم يحس المشاهد إنه عايز يشاركه لصاحبه فوراً`;
+
+function getPersona() {
+  const custom = document.getElementById('persona-text')?.value?.trim();
+  return custom || DEFAULT_PERSONA;
+}
+
+// ═══ GEMINI CALL ═══
+async function callGemini(prompt) {
+  if (!API_KEY) { alert('⚠️ أضف Gemini API Key الأول في الـ Sidebar'); throw new Error('No API key'); }
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: getPersona() }] },
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.95, maxOutputTokens: 2048 }
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || 'API Error');
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'لا يوجد رد';
+}
+
+// ═══ HELPERS ═══
+function setLoading(btnId, outId, loading) {
+  const btn = document.getElementById(btnId);
+  const out = document.getElementById(outId);
+  if (loading) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> جاري التوليد...';
+    out.classList.remove('empty');
+    out.innerHTML = '<span class="pulse">⏳ Gemini بيكتب...</span>';
+  } else {
+    btn.disabled = false;
+  }
+}
+
+function setOutput(outId, text, resetBtn, btnOriginal) {
+  const out = document.getElementById(outId);
+  out.textContent = text;
+  if (resetBtn) { const btn = document.getElementById(resetBtn); btn.disabled=false; btn.innerHTML=btnOriginal; }
+}
+
+function copyOutput(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = event.currentTarget.innerHTML;
+    event.currentTarget.innerHTML = '✅ تم النسخ';
+    setTimeout(() => event.currentTarget.innerHTML = orig, 1500);
+  });
+}
+
+// ═══ DASHBOARD ═══
+function updateDashboard() {
+  const f = parseInt(document.getElementById('inp-followers').value.replace(/,/g,''))||0;
+  const pf = parseInt(document.getElementById('inp-prev-followers').value.replace(/,/g,''))||0;
+  const v = document.getElementById('inp-views').value;
+  const vid = document.getElementById('inp-videos').value;
+  const eng = document.getElementById('inp-engage').value;
+
+  document.getElementById('stat-followers').textContent = f ? f.toLocaleString('ar') : '—';
+  document.getElementById('stat-views').textContent = v ? parseInt(v).toLocaleString('ar') : '—';
+  document.getElementById('stat-videos').textContent = vid || '—';
+  document.getElementById('stat-engage').textContent = eng ? eng+'%' : '—';
+
+  if (f && pf) {
+    const diff = f - pf;
+    const pct = ((diff/pf)*100).toFixed(1);
+    const el = document.getElementById('stat-fchange');
+    el.textContent = (diff>0?'▲ +':diff<0?'▼ ':'')+diff.toLocaleString('ar')+' ('+pct+'%)';
+    el.className = 'change '+(diff>0?'up':diff<0?'down':'flat');
+  }
+}
+
+function updatePlatforms() {
+  const vals = {yt:document.getElementById('p-yt').value, tt:document.getElementById('p-tt').value, fb:document.getElementById('p-fb').value, ig:document.getElementById('p-ig').value};
+  const nums = Object.values(vals).map(v=>parseInt(v)||0);
+  const max = Math.max(...nums, 1);
+  ['yt','tt','fb','ig'].forEach(k => {
+    const n = parseInt(vals[k])||0;
+    document.getElementById(k+'-val').textContent = n ? n.toLocaleString('ar') : '—';
+    document.getElementById(k+'-bar').style.width = (n/max*100)+'%';
+  });
+}
+
+async function analyzeDashboard() {
+  setLoading('btn-dash-analyze','dash-ai-output',true);
+  const f = document.getElementById('inp-followers').value;
+  const pf = document.getElementById('inp-prev-followers').value;
+  const v = document.getElementById('inp-views').value;
+  const vid = document.getElementById('inp-videos').value;
+  const eng = document.getElementById('inp-engage').value;
+  const prompt = `أنت مستشار نمو لأستاذ رياضيات مصري على سوشيال ميديا (يوتيوب، تيك توك، فيسبوك، إنستغرام).
+البيانات: متابعين: ${f}، الشهر السابق: ${pf}، مشاهدات هذا الشهر: ${v}، عدد الفيديوهات: ${vid}، معدل التفاعل: ${eng}%.
+اكتب بالعربي العامية المصرية:
+1. 🎯 تقييم الأداء الحالي (صراحة تامة)
+2. 📈 معدل النمو هيوصله في 3 شهور لو استمر
+3. ⚠️ أهم 3 تحذيرات أو نقاط ضعف
+4. 🚀 أهم 3 إجراءات فورية لتسريع النمو
+5. 💡 توقع: في 6 شهور هيوصل لكام متابع؟`;
+  try {
+    const result = await callGemini(prompt);
+    setOutput('dash-ai-output', result, 'btn-dash-analyze', '🔍 تحليل ذكي');
+  } catch(e) { setOutput('dash-ai-output', '❌ خطأ: '+e.message, 'btn-dash-analyze','🔍 تحليل ذكي'); }
+}
+
+// ═══ CONTENT GENERATOR ═══
+async function generateContent() {
+  const topic = document.getElementById('c-topic').value.trim();
+  if (!topic) { alert('اكتب الموضوع الأول'); return; }
+  setLoading('btn-gen-content','content-output',true);
+  const platform = document.getElementById('c-platform').value;
+  const type = document.getElementById('c-type').value;
+  const level = document.getElementById('c-level').value;
+  const style = document.getElementById('c-style').value;
+  const extra = document.getElementById('c-extra').value;
+
+  const typeMap = {
+    script: `اسكريبت كامل مقسم بالثانية (Hook 0-5ث، بناء الشوق 5-30ث، الشرح السريع، الـ CTA)`,
+    hook: `5 hooks صادمة ومختلفة تماماً`,
+    ideas: `10 أفكار فيديوهات مختلفة وإبداعية`,
+    story: `سيناريو درامي/وثائقي مشوق يحكي قصة خلف الموضوع`,
+    challenge: `تحدي أو لغزة تفاعلية مع إجابتين يبدوان صح (لتفجير التعليقات)`,
+    trend: `ربط الموضوع بأحدث تريندات الـ AI والتقنية بأسلوب Gen Z`,
+    engagement: `مسألة engagement bait تثير جدالاً وتفجر التعليقات`,
+    visual: `أوامر Manim وبايثون تفصيلية لصنع رسوم متحركة تشرح الموضوع`
+  };
+
+  const prompt = `أنت خبير محتوى تعليمي رياضيات على سوشيال ميديا للجمهور المصري والعربي.
+الموضوع: ${topic}
+المنصة: ${platform} | النوع: ${typeMap[type]}
+المرحلة: ${level} | الأسلوب: ${style}
+${extra ? 'تفاصيل إضافية: '+extra : ''}
+
+اكتب بالعربي العامية المصرية، ابدأ مباشرة بالمحتوى بدون مقدمات.
+المحتوى يجب يكون فيه طاقة عالية، مثير للتفاعل، وعلمياً دقيق.`;
+
+  try {
+    const result = await callGemini(prompt);
+    setOutput('content-output', result, 'btn-gen-content', '🚀 ولّد المحتوى');
+  } catch(e) { setOutput('content-output', '❌ خطأ: '+e.message, 'btn-gen-content','🚀 ولّد المحتوى'); }
+}
+
+// ═══ BULK GENERATE ═══
+async function bulkGenerate() {
+  const topic = document.getElementById('bulk-topic').value.trim();
+  if (!topic) { alert('اكتب الموضوع'); return; }
+  const btn = document.getElementById('btn-bulk');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> جاري...';
+  const out = document.getElementById('bulk-output');
+  out.innerHTML = '<div class="alert info pulse">⏳ Gemini بيولّد 10 أفكار...</div>';
+
+  const prompt = `أنت خبير محتوى رياضيات على سوشيال ميديا. اكتب بالعربي العامية.
+اعملي 10 أفكار فيديوهات مختلفة تماماً لموضوع "${topic}" تشمل كل المنصات.
+لكل فكرة:
+🎬 العنوان الصادم
+📱 المنصة المناسبة
+⚡ الـ Hook (أول جملة)
+📝 الفكرة الرئيسية (جملتين)
+🎯 نوع التفاعل المتوقع
+---
+(افصل بـ --- بين كل فكرة)`;
+
+  try {
+    const result = await callGemini(prompt);
+    const ideas = result.split('---').filter(s=>s.trim());
+    out.innerHTML = '';
+    ideas.forEach((idea,i) => {
+      const card = document.createElement('div');
+      card.className = 'script-card';
+      card.innerHTML = `<div class="hook">💡 فكرة ${i+1}</div><div class="body-text">${idea.trim()}</div>
+      <div style="margin-top:8px"><button class="copy-btn" onclick="navigator.clipboard.writeText(this.closest('.script-card').querySelector('.body-text').textContent)">📋 نسخ</button></div>`;
+      out.appendChild(card);
+    });
+    btn.disabled=false; btn.innerHTML='💥 توليد ضخم (10 أفكار)';
+  } catch(e) {
+    out.innerHTML = '<div class="alert warn">❌ '+e.message+'</div>';
+    btn.disabled=false; btn.innerHTML='💥 توليد ضخم (10 أفكار)';
+  }
+}
+
+// ═══ SCRIPTS ═══
+async function generateScript() {
+  const topic = document.getElementById('s-topic').value.trim();
+  if (!topic) { alert('اكتب الموضوع'); return; }
+  setLoading('btn-script','script-output',true);
+  const dur = document.getElementById('s-duration').value;
+  const hook = document.getElementById('s-hook-type').value;
+  const cta = document.getElementById('s-cta').value;
+
+  const prompt = `أنت كاتب سكريبتات محترف لمحتوى تعليمي رياضيات.
+اكتب سكريبت احترافي كامل مقسم بالثانية لـ "${topic}".
+المدة: ${dur} | نوع الـ Hook: ${hook} | الـ CTA: ${cta}
+
+الهيكل المطلوب:
+⚡ [0-5ث] HOOK (${hook}) — جملة واحدة صادمة
+😮 [5-15ث] بناء التشويق — سؤال أو إثارة
+📚 [15-Xث] الشرح — مقسم لنقاط واضحة مع [إشارات المونتاج]
+🎯 [آخر 10ث] CTA — ${cta}
+
+بين قوسين [] اكتب توجيهات الكاميرا: [زوم]، [كتابة على الشاشة]، [أضف صوت جرس]، إلخ
+اكتب بالعامية المصرية. ابدأ مباشرة.`;
+
+  try {
+    const result = await callGemini(prompt);
+    setOutput('script-output', result, 'btn-script', '🎬 ولّد الاسكريبت');
+  } catch(e) { setOutput('script-output', '❌ '+e.message, 'btn-script','🎬 ولّد الاسكريبت'); }
+}
+
+// ═══ IDEAS ═══
+async function generateIdeas() {
+  setLoading('btn-ideas','ideas-list',true);
+  const focus = document.getElementById('ideas-focus').value;
+  const level = document.getElementById('ideas-level').value;
+  const btn = document.getElementById('btn-ideas');
+
+  const prompt = `أنت مستشار محتوى رياضيات. اكتب بالعامية المصرية.
+ولّد 10 أفكار فيديوهات إبداعية ومختلفة تماماً.
+المحور: ${focus} | المرحلة: ${level}
+لكل فكرة:
+💡 العنوان (صادم وجذاب)
+📱 المنصة الأنسب
+🎯 سبب ليه هينجح
+⏱ المدة المثالية
+اكتب قائمة مرقمة واضحة. ابدأ مباشرة بالأرقام.`;
+
+  try {
+    const result = await callGemini(prompt);
+    const list = document.getElementById('ideas-list');
+    list.innerHTML = '';
+    // Parse numbered ideas
+    const lines = result.split('\n');
+    let currentIdea = '';
+    let ideaNum = 0;
+    lines.forEach(line => {
+      if (/^\d+[\.\-\)]/.test(line.trim())) {
+        if (currentIdea && ideaNum > 0) {
+          addIdeaCard(list, ideaNum, currentIdea.trim());
+        }
+        ideaNum++;
+        currentIdea = line;
+      } else {
+        currentIdea += '\n' + line;
+      }
+    });
+    if (currentIdea && ideaNum > 0) addIdeaCard(list, ideaNum, currentIdea.trim());
+    if (list.children.length === 0) { list.innerHTML = `<div class="script-card"><div class="body-text">${result}</div></div>`; }
+    btn.disabled=false; btn.innerHTML='💡 ولّد الأفكار';
+  } catch(e) {
+    document.getElementById('ideas-list').innerHTML = '<div class="alert warn">❌ '+e.message+'</div>';
+    btn.disabled=false; btn.innerHTML='💡 ولّد الأفكار';
+  }
+}
+
+function addIdeaCard(container, num, text) {
+  const card = document.createElement('div');
+  card.className = 'script-card';
+  card.innerHTML = `<div class="hook">💡 فكرة ${num}</div><div class="body-text">${text}</div>
+  <div style="margin-top:8px;display:flex;gap:8px">
+    <button class="copy-btn" onclick="navigator.clipboard.writeText(this.closest('.script-card').querySelector('.body-text').textContent)">📋 نسخ</button>
+    <button class="copy-btn" onclick="sendToContent(this.closest('.script-card').querySelector('.body-text').textContent)">→ إرسال لمولد المحتوى</button>
+  </div>`;
+  container.appendChild(card);
+}
+
+function sendToContent(text) {
+  document.getElementById('c-topic').value = text.substring(0,100);
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-content').classList.add('active');
+  document.querySelectorAll('.nav-item')[0].classList.add('active');
+}
+
+// ═══ HOOKS ═══
+async function generateHooks() {
+  const topic = document.getElementById('h-topic').value.trim();
+  if (!topic) { alert('اكتب الموضوع'); return; }
+  setLoading('btn-hooks','hooks-output',true);
+  const type = document.getElementById('h-type').value;
+  const plat = document.getElementById('h-platform').value;
+
+  const prompt = `أنت متخصص في كتابة Hooks جذابة لمحتوى رياضيات على سوشيال ميديا.
+الموضوع: "${topic}" | النوع: ${type} | المنصة: ${plat}
+اكتب 10 Hooks مختلفة تماماً بالعامية المصرية.
+كل Hook جملة أو جملتين فقط — قوية، مثيرة، تمنع السكرول.
+رقّم الـ Hooks. ابدأ مباشرة.`;
+
+  try {
+    const result = await callGemini(prompt);
+    setOutput('hooks-output', result, 'btn-hooks', '⚡ ولّد الـ Hooks');
+  } catch(e) { setOutput('hooks-output','❌ '+e.message,'btn-hooks','⚡ ولّد الـ Hooks'); }
+}
+
+// ═══ RECYCLE ═══
+async function recycleContent() {
+  const input = document.getElementById('recycle-input').value.trim();
+  if (!input) { alert('الصق المحتوى الأصلي الأول'); return; }
+  const btn = document.getElementById('btn-recycle');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> جاري التحويل...';
+
+  const platforms = ['tt','yt','fb','ig'];
+  const prompts = {
+    tt: `حوّل هذا المحتوى لسكريبت تيك توك مدته 60 ثانية بالعامية المصرية. Hook قوي + شرح سريع + CTA.\n\nالمحتوى: ${input}`,
+    yt: `اكتب عنوان يوتيوب جذاب + وصف احترافي (200 كلمة) + 15 هاشتاج لـ:\n${input}`,
+    fb: `اكتب بوست فيسبوك منظم ومفيد (مقدمة + نقاط + سؤال للتفاعل) عن:\n${input}`,
+    ig: `اكتب كابشن إنستغرام جذاب + 20 هاشتاج مناسب لمحتوى رياضيات عن:\n${input}`
+  };
+
+  const outDiv = document.getElementById('recycle-output');
+  outDiv.style.display = 'grid';
+
+  for (const plat of platforms) {
+    const outEl = document.getElementById('r-'+plat+'-text');
+    outEl.innerHTML = '<span class="pulse">⏳...</span>';
+    try {
+      const result = await callGemini(prompts[plat]);
+      outEl.textContent = result;
+    } catch(e) { outEl.textContent = '❌ '+e.message; }
+  }
+
+  btn.disabled=false; btn.innerHTML='♻️ حوّل لكل المنصات';
+}
+
+// ═══ ANALYTICS ═══
+function addVideoRow() {
+  const row = document.createElement('div');
+  row.className = 'video-row';
+  row.style = 'display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px';
+  row.innerHTML = `
+    <div class="form-row"><input type="text" placeholder="عنوان الفيديو..."></div>
+    <div class="form-row"><input type="text" placeholder="مشاهدات"></div>
+    <div class="form-row"><input type="text" placeholder="لايكات"></div>
+    <div class="form-row"><input type="text" placeholder="تعليقات"></div>
+    <div class="form-row"><input type="text" placeholder="retention %"></div>
+    <button class="btn btn-ghost" onclick="this.closest('.video-row').remove()" style="height:38px;padding:0 12px">✕</button>`;
+  document.getElementById('video-rows').appendChild(row);
+}
+
+async function analyzeVideos() {
+  const rows = document.querySelectorAll('.video-row');
+  const videos = [];
+  rows.forEach(r => {
+    const inputs = r.querySelectorAll('input');
+    if (inputs[0].value) videos.push({ title:inputs[0].value, views:inputs[1].value, likes:inputs[2].value, comments:inputs[3].value, retention:inputs[4].value });
+  });
+  if (videos.length < 2) { alert('أدخل على الأقل فيديوين للمقارنة'); return; }
+  setLoading('btn-analyze','analytics-output',true);
+
+  const videoStr = videos.map((v,i)=>`${i+1}. "${v.title}" | مشاهدات:${v.views} | لايكات:${v.likes} | تعليقات:${v.comments} | Retention:${v.retention}%`).join('\n');
+  const prompt = `أنت محلل أداء محتوى متخصص في قنوات الرياضيات العربية.
+حلل هذه الفيديوهات واكتشف الأنماط:
+${videoStr}
+
+اكتب بالعامية المصرية:
+🏆 أقوى 2 فيديو وليه نجحوا (تحليل Hook، الموضوع، التوقيت)
+😞 أضعف 2 فيديو وليه فشلوا
+📊 الوصفة السرية للنجاح في قناتك (الأنماط المشتركة)
+⚡ 5 توصيات فورية للفيديو الجاي
+🎯 نوع المحتوى اللي الجمهور بيتفاعل معاه أكتر`;
+
+  try {
+    const result = await callGemini(prompt);
+    setOutput('analytics-output', result, 'btn-analyze', '🔍 حلّل الأنماط');
+  } catch(e) { setOutput('analytics-output','❌ '+e.message,'btn-analyze','🔍 حلّل الأنماط'); }
+}
+
+async function analyzeSingleVideo() {
+  const title = document.getElementById('single-title').value;
+  if (!title) { alert('اكتب عنوان الفيديو'); return; }
+  setLoading('btn-single','single-output',true);
+  const views = document.getElementById('single-views').value;
+  const ret = document.getElementById('single-ret').value;
+  const likes = document.getElementById('single-likes').value;
+  const comments = document.getElementById('single-comments').value;
+  const notes = document.getElementById('single-notes').value;
+
+  const prompt = `أنت خبير تحسين محتوى رياضيات.
+الفيديو: "${title}"
+مشاهدات: ${views} | Retention: ${ret}% | لايكات: ${likes} | تعليقات: ${comments}
+ملاحظاتي: ${notes}
+
+حلل بدقة بالعامية المصرية:
+🔍 تشخيص المشكلة الرئيسية
+⏱ في أي لحظة المشاهد بيسيب الفيديو وليه
+💡 إزاي تكتب Hook أقوى لنفس الموضوع (مثال عملي)
+🎬 تعديلات المونتاج اللي ممكن تضاعف الـ Retention
+📈 لو عملت فيديو تاني عن نفس الموضوع، إيه اللي هتغيره`;
+
+  try {
+    const result = await callGemini(prompt);
+    setOutput('single-output', result, 'btn-single', '🔬 تحليل عميق');
+  } catch(e) { setOutput('single-output','❌ '+e.message,'btn-single','🔬 تحليل عميق'); }
+}
+
+// ═══ COMMENTS ═══
+async function mineComments() {
+  const comments = document.getElementById('comments-input').value.trim();
+  if (!comments) { alert('الصق التعليقات الأول'); return; }
+  setLoading('btn-comments','comments-output',true);
+
+  const prompt = `أنت محلل جمهور متخصص. اكتب بالعامية المصرية.
+التعليقات:
+${comments}
+
+صنّف واستخرج:
+💎 أفضل 5 أسئلة تستحق فيديو كامل (مع اقتراح عنوان لكل منها)
+🔥 أقوى تحديات أو طلبات جدل (Engagement bait جاهز)
+😤 شكاوى متكررة لازم تعالجها
+🧩 موضوعات مش اتشرحتش لكن الجمهور محتاجها
+💬 رد جاهز على التعليقات الصعبة
+📌 الجملة اللي تقولها في أول الفيديو الجاي لتشعرهم إنك بتسمعهم`;
+
+  try {
+    const result = await callGemini(prompt);
+    setOutput('comments-output', result, 'btn-comments', '💎 استخرج الذهب');
+  } catch(e) { setOutput('comments-output','❌ '+e.message,'btn-comments','💎 استخرج الذهب'); }
+}
+
+// ═══ TRENDS ═══
+async function generateTrends() {
+  const topic = document.getElementById('t-topic').value.trim();
+  if (!topic) { alert('اكتب الموضوع'); return; }
+  setLoading('btn-trends','trends-output',true);
+  const trend = document.getElementById('t-trend').value;
+
+  const prompt = `أنت خبير ربط المحتوى التعليمي بالثقافة الشعبية.
+الموضوع الرياضي: "${topic}" | مجال التريند: ${trend}
+
+اكتب بالعامية المصرية:
+5 أفكار فيديوهات تربط "${topic}" بـ"${trend}" بشكل إبداعي ومثير:
+لكل فكرة:
+🎬 عنوان الفيديو الصادم
+⚡ الـ Hook
+📖 الفكرة الكاملة (3-4 جمل)
+🎯 ليه هينجح مع الجمهور الشاب`;
+
+  try {
+    const result = await callGemini(prompt);
+    setOutput('trends-output', result, 'btn-trends', '🔥 ولّد ربط التريند');
+  } catch(e) { setOutput('trends-output','❌ '+e.message,'btn-trends','🔥 ولّد ربط التريند'); }
+}
+
+// ═══ SCHEDULE ═══
+async function generateSchedule() {
+  setLoading('btn-sched','schedule-output',true);
+  const freq = document.getElementById('sch-freq').value;
+  const season = document.getElementById('sch-season').value;
+  const topics = document.getElementById('sch-topics').value;
+
+  const prompt = `أنت مستشار جدولة محتوى متخصص في تعليم الرياضيات.
+اعمل جدول نشر أسبوعي كامل:
+عدد الفيديوهات: ${freq} | الموسم: ${season} | المواضيع: ${topics}
+
+المنصات: يوتيوب، تيك توك، فيسبوك، إنستغرام
+اكتب بالعامية المصرية:
+📅 جدول مفصل (يوم، وقت، منصة، موضوع، نوع المحتوى)
+⏰ أفضل أوقات النشر لكل منصة مع السبب
+💡 استراتيجية الأسبوع العامة
+🎯 فيديو الـ "anchor" (الأهم في الأسبوع) وليه`;
+
+  try {
+    const result = await callGemini(prompt);
+    setOutput('schedule-output', result, 'btn-sched', '📅 ولّد الجدول');
+  } catch(e) { setOutput('schedule-output','❌ '+e.message,'btn-sched','📅 ولّد الجدول'); }
+}
+
+// ═══ PERSONA CONTROLS ═══
+function togglePersona() {
+  const ta = document.getElementById('persona-text');
+  const preview = document.getElementById('persona-preview');
+  const actions = document.getElementById('persona-actions');
+  const btn = document.getElementById('persona-toggle');
+  const isHidden = ta.style.display === 'none';
+  if (isHidden) {
+    ta.style.display = 'block';
+    actions.style.display = 'flex';
+    preview.style.display = 'none';
+    btn.textContent = 'إغلاق';
+    if (!ta.value) ta.value = DEFAULT_PERSONA;
+  } else {
+    ta.style.display = 'none';
+    actions.style.display = 'none';
+    preview.style.display = 'block';
+    btn.textContent = 'تعديل';
+  }
+}
+
+function savePersona() {
+  const ta = document.getElementById('persona-text');
+  const preview = document.getElementById('persona-preview');
+  const actions = document.getElementById('persona-actions');
+  const btn = document.getElementById('persona-toggle');
+  ta.style.display = 'none';
+  actions.style.display = 'none';
+  preview.style.display = 'block';
+  btn.textContent = 'تعديل';
+  preview.innerHTML = ta.value.trim()
+    ? '✅ شخصية مخصصة مفعّلة'
+    : '✅ كاريزما نيوتن مفعّلة في كل الأقسام';
+}
+
+function resetPersona() {
+  const ta = document.getElementById('persona-text');
+  ta.value = DEFAULT_PERSONA;
+}
+
+function saveToBank() {
+  const content = document.getElementById('content-output').textContent;
+  if (content && content !== 'اختر الإعدادات وابدأ التوليد...') {
+    savedIdeas.push(content);
+    alert('✅ تم الحفظ في البنك! عدد المحفوظات: '+savedIdeas.length);
+  }
+}
+</script>
+</body>
+</html>
