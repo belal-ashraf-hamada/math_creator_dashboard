@@ -1689,600 +1689,6 @@ function showPage(id) {
 }
 
 
-// ══════════════════════════════════════════════
-// WEEKLY REPORT
-// ══════════════════════════════════════════════
-async function generateWeeklyReport() {
-  const views = document.getElementById('wr-views').value;
-  const prevViews = document.getElementById('wr-prev-views').value;
-  const newF = document.getElementById('wr-new-followers').value;
-  const vids = document.getElementById('wr-videos').value;
-  const best = document.getElementById('wr-best').value;
-  const worst = document.getElementById('wr-worst').value;
-  const notes = document.getElementById('wr-notes').value;
-  setLoading('btn-weekly','weekly-output',true);
-  const growthPct = prevViews ? (((views-prevViews)/prevViews)*100).toFixed(1) : '?';
-  const prompt = `أنت مساعد تحليل محتوى. اكتب تقرير أسبوعي احترافي بالعامية المصرية لمدرس رياضيات على سوشيال ميديا.
-البيانات:
-- مشاهدات هذا الأسبوع: ${views} (الأسبوع السابق: ${prevViews}) — نمو ${growthPct}%
-- متابعين جدد: ${newF}
-- فيديوهات منشورة: ${vids}
-- أفضل فيديو: ${best}
-- أسوأ فيديو: ${worst}
-- ملاحظاتي: ${notes}
-اكتب:
-📊 ملخص الأسبوع (3 جمل)
-🏆 إنجاز الأسبوع
-⚠️ تحذير/نقطة ضعف
-🎯 توصية واحدة للأسبوع الجاي
-💪 جملة تحفيز للاستمرار`;
-  try {
-    const r = await callGemini(prompt);
-    setOutput('weekly-output', r, 'btn-weekly', '📋 ولّد التقرير');
-  } catch(e) { setOutput('weekly-output','❌ '+e.message,'btn-weekly','📋 ولّد التقرير'); }
-}
-
-async function sendWeeklyToTelegram() {
-  const text = document.getElementById('weekly-output').textContent;
-  if (!text || text.includes('أدخل')) { alert('ولّد التقرير الأول'); return; }
-  const btn = document.getElementById('btn-send-weekly');
-  btn.disabled=true; btn.textContent='⏳ جاري...';
-  await sendTelegram('📋 التقرير الأسبوعي:
-
-'+text);
-  btn.textContent='✅ تم الإرسال'; btn.disabled=false;
-  setTimeout(()=>{btn.textContent='📱 إرسال تيليجرام';},2000);
-}
-
-// ══════════════════════════════════════════════
-// PLATFORM COMPARE
-// ══════════════════════════════════════════════
-async function analyzePlatforms() {
-  setLoading('btn-pc','pc-ai',true);
-  const plats = ['yt','tt','fb','ig'];
-  const names = {yt:'يوتيوب',tt:'تيك توك',fb:'فيسبوك',ig:'إنستغرام'};
-  let data = {};
-  plats.forEach(p => {
-    data[p] = {
-      views: parseInt(document.getElementById(`pc-${p}-views`).value)||0,
-      followers: parseInt(document.getElementById(`pc-${p}-followers`).value)||0,
-      likes: parseInt(document.getElementById(`pc-${p}-likes`).value)||0,
-      comments: parseInt(document.getElementById(`pc-${p}-comments`).value)||0,
-      shares: parseInt(document.getElementById(`pc-${p}-shares`).value)||0,
-      time: parseInt(document.getElementById(`pc-${p}-time`).value)||1,
-    };
-    data[p].engRate = data[p].views > 0 ? (((data[p].likes+data[p].comments+data[p].shares)/data[p].views)*100).toFixed(2) : 0;
-    data[p].followersPerHour = data[p].time > 0 ? (data[p].followers/data[p].time).toFixed(1) : 0;
-    data[p].viewsPerHour = data[p].time > 0 ? Math.round(data[p].views/data[p].time) : 0;
-  });
-  const bestEng = plats.reduce((a,b)=>data[a].engRate>data[b].engRate?a:b);
-  const bestROI = plats.reduce((a,b)=>data[a].followersPerHour>data[b].followersPerHour?a:b);
-  const resEl = document.getElementById('pc-results');
-  resEl.classList.remove('empty');
-  resEl.textContent = plats.map(p=>`${names[p]}:
-  👁 ${data[p].views.toLocaleString('ar')} مشاهدة
-  👥 ${data[p].followers} متابع جديد
-  💚 ${data[p].engRate}% تفاعل
-  ⚡ ${data[p].followersPerHour} متابع/ساعة عمل
-  📈 ${data[p].viewsPerHour.toLocaleString('ar')} مشاهدة/ساعة`).join('
-
-') + `
-
-🏆 أعلى تفاعل: ${names[bestEng]}
-💡 أفضل ROI: ${names[bestROI]}`;
-  const str = plats.map(p=>`${names[p]}: ${data[p].views} مشاهدة، ${data[p].followers} متابع جديد، ${data[p].engRate}% تفاعل، ${data[p].time} ساعة عمل`).join(' | ');
-  const prompt = `أنت مستشار محتوى رياضيات. حلل هذه البيانات لمدرس رياضيات مصري:
-${str}
-اكتب بالعامية المصرية:
-🏆 المنصة الأفضل له وليه
-⚡ المنصة الأفضل ROI (أكتر نتيجة بأقل وقت)
-🎯 توزيع مقترح للوقت (مثال: 50% تيك توك، 30% يوتيوب...)
-🚫 منصة يخفف عليها وليه`;
-  try {
-    const r = await callGemini(prompt);
-    setOutput('pc-ai', r, 'btn-pc', '📊 حلّل وقارن');
-  } catch(e) { setOutput('pc-ai','❌ '+e.message,'btn-pc','📊 حلّل وقارن'); }
-}
-
-// ══════════════════════════════════════════════
-// INCOME CALCULATOR
-// ══════════════════════════════════════════════
-document.addEventListener('change', function(e){
-  if(e.target.id==='inc-has-course') {
-    document.getElementById('inc-course-row').style.display = e.target.value==='1' ? 'flex' : 'none';
-  }
-});
-
-async function calcIncome() {
-  const ytViews = parseInt(document.getElementById('inc-yt-views').value)||0;
-  const rpm = parseFloat(document.getElementById('inc-rpm').value)||1.5;
-  const students = parseInt(document.getElementById('inc-students').value)||0;
-  const price = parseInt(document.getElementById('inc-price').value)||0;
-  const sessions = parseInt(document.getElementById('inc-sessions').value)||0;
-  const hasCourse = document.getElementById('inc-has-course').value==='1';
-  const ytIncome = (ytViews/1000*rpm);
-  const lessonsIncome = students*price*sessions;
-  const courseRev = hasCourse ? document.getElementById('inc-course-rev').value : '0';
-  const courseNum = parseFloat(courseRev.replace(/[^0-9.]/g,''))||0;
-  const total = ytIncome + lessonsIncome + courseNum;
-  const outEl = document.getElementById('income-output');
-  outEl.classList.remove('empty');
-  outEl.textContent = `💰 تفاصيل دخلك الشهري:
-
-▶ يوتيوب (${ytViews.toLocaleString()} مشاهدة × $${rpm} RPM):
-   $${ytIncome.toFixed(0)} = ~${Math.round(ytIncome*50).toLocaleString('ar')} جنيه
-
-📚 حصص خاصة (${students} طالب × ${price}ج × ${sessions} حصة):
-   ${lessonsIncome.toLocaleString('ar')} جنيه
-${hasCourse?`
-🎓 كورسات مسجلة:
-   ~${courseNum.toLocaleString('ar')} جنيه
-`:''}
-══════════════
-💰 الإجمالي الشهري:
-   ~${Math.round(total*50+lessonsIncome).toLocaleString('ar')} جنيه`;
-  const growEl = document.getElementById('income-growth');
-  growEl.classList.remove('empty');
-  growEl.textContent = `🚀 لو ضاعفت متابعيك:
-× 2 متابعين → دخل يوتيوب: $${(ytIncome*1.8).toFixed(0)}
-× 5 متابعين → دخل يوتيوب: $${(ytIncome*4).toFixed(0)}
-
-📚 لو زدت طلابك:
-5 طلاب أضافيين → +${(5*price*sessions).toLocaleString('ar')} جنيه/شهر
-10 طلاب أضافيين → +${(10*price*sessions).toLocaleString('ar')} جنيه/شهر
-
-🎓 لو أطلقت كورس بـ 500ج:
-20 مشتري/شهر → +10,000 جنيه
-50 مشتري/شهر → +25,000 جنيه`;
-}
-
-// ══════════════════════════════════════════════
-// STUDENT QUESTIONS
-// ══════════════════════════════════════════════
-let studentQuestions = JSON.parse(localStorage.getItem('student_questions')||'[]');
-
-function addStudentQuestion() {
-  const q = document.getElementById('sq-question').value.trim();
-  const topic = document.getElementById('sq-topic').value.trim();
-  const source = document.getElementById('sq-source').value;
-  if (!q) { alert('اكتب السؤال'); return; }
-  const existing = studentQuestions.find(x => x.q.toLowerCase() === q.toLowerCase());
-  if (existing) { existing.count++; existing.sources.push(source); }
-  else studentQuestions.push({id:Date.now(),q,topic,sources:[source],count:1,date:new Date().toLocaleDateString('ar')});
-  localStorage.setItem('student_questions', JSON.stringify(studentQuestions));
-  document.getElementById('sq-question').value='';
-  document.getElementById('sq-topic').value='';
-  renderStudentQuestions();
-}
-
-async function bulkAddQuestions() {
-  const text = document.getElementById('sq-bulk').value.trim();
-  if (!text) return;
-  setLoading('btn-sq-analyze','sq-ai-output',true);
-  const prompt = `استخرج كل الأسئلة الرياضية من هذه التعليقات. أعد قائمة JSON فقط:
-[{"q":"السؤال","topic":"الموضوع"}]
-التعليقات:
-${text}`;
-  try {
-    const r = await callGemini(prompt);
-    const clean = r.replace(/```json|```/g,'').trim();
-    const arr = JSON.parse(clean);
-    arr.forEach(item => {
-      if(item.q) studentQuestions.push({id:Date.now()+Math.random(),q:item.q,topic:item.topic||'عام',sources:['تعليقات'],count:1,date:new Date().toLocaleDateString('ar')});
-    });
-    localStorage.setItem('student_questions', JSON.stringify(studentQuestions));
-    document.getElementById('sq-bulk').value='';
-    renderStudentQuestions();
-    document.getElementById('btn-sq-analyze').disabled=false;
-    document.getElementById('btn-sq-analyze').textContent='🤖 تحليل Gemini';
-  } catch(e) {
-    setOutput('sq-ai-output','❌ '+e.message,'btn-sq-analyze','🤖 تحليل Gemini');
-  }
-}
-
-function renderStudentQuestions() {
-  const sorted = [...studentQuestions].sort((a,b)=>b.count-a.count);
-  const el = document.getElementById('sq-list');
-  if (!sorted.length) { el.innerHTML='<div class="alert info">لا توجد أسئلة بعد</div>'; return; }
-  el.innerHTML = sorted.slice(0,30).map(q=>`
-    <div class="script-card" style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600;margin-bottom:3px">${q.q}</div>
-        <div style="font-size:11px;color:var(--mut)">${q.topic||'عام'} · ${q.date}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-        <span style="background:var(--acc)22;color:var(--acc);font-size:12px;font-weight:700;padding:3px 8px;border-radius:20px">×${q.count}</span>
-        <button onclick="removeQuestion(${q.id})" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:14px">✕</button>
-      </div>
-    </div>`).join('');
-}
-
-function removeQuestion(id) {
-  studentQuestions = studentQuestions.filter(q=>q.id!==id);
-  localStorage.setItem('student_questions',JSON.stringify(studentQuestions));
-  renderStudentQuestions();
-}
-
-async function analyzeStudentQuestions() {
-  if (!studentQuestions.length) { alert('أضف أسئلة الأول'); return; }
-  setLoading('btn-sq-analyze','sq-ai-output',true);
-  const sorted = [...studentQuestions].sort((a,b)=>b.count-a.count).slice(0,20);
-  const str = sorted.map(q=>`"${q.q}" (${q.topic}) — تكررت ${q.count} مرة`).join('
-');
-  const prompt = `أنت مستشار محتوى لمدرس رياضيات. حلّل أسئلة الطلاب:
-${str}
-اكتب بالعامية المصرية:
-🎬 أولوية الفيديوهات: أهم 5 فيديوهات لازم تعملها فوراً مع عنوان كل واحد
-🧩 الأنماط: إيه المواضيع اللي فيها فجوات في فهم الطلاب؟
-💡 فكرة سيريز: إزاي تحول الأسئلة دي لسلسلة فيديوهات متكاملة`;
-  try {
-    const r = await callGemini(prompt);
-    setOutput('sq-ai-output',r,'btn-sq-analyze','🤖 تحليل Gemini');
-  } catch(e) { setOutput('sq-ai-output','❌ '+e.message,'btn-sq-analyze','🤖 تحليل Gemini'); }
-}
-
-// ══════════════════════════════════════════════
-// DIFFICULTY ANALYZER
-// ══════════════════════════════════════════════
-function addDiffRow() {
-  const row = document.createElement('div');
-  row.className='diff-row';
-  row.style='display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px';
-  row.innerHTML=`<div class="form-row"><input type="text" placeholder="الموضوع"></div><div class="form-row"><input type="text" placeholder="مشاهدات"></div><div class="form-row"><input type="text" placeholder="تعليقات صعبة"></div><div class="form-row"><input type="text" placeholder="retention %"></div><button class="btn btn-ghost" onclick="this.closest('.diff-row').remove()" style="height:38px;padding:0 12px">✕</button>`;
-  document.getElementById('diff-rows').appendChild(row);
-}
-
-async function analyzeDifficulty() {
-  const rows = document.querySelectorAll('.diff-row');
-  const topics = [];
-  rows.forEach(r=>{
-    const ins = r.querySelectorAll('input');
-    if(ins[0].value) topics.push({topic:ins[0].value,views:ins[1].value||0,hardComments:ins[2].value||0,retention:ins[3].value||0});
-  });
-  if(topics.length<2){alert('أضف موضوعين على الأقل');return;}
-  setLoading('btn-diff','diff-output',true);
-  const str = topics.map(t=>`"${t.topic}": ${t.views} مشاهدة، ${t.hardComments} تعليق "مش فاهم"، retention ${t.retention}%`).join('
-');
-  const prompt = `أنت محلل تعليمي. حلّل صعوبة هذه المواضيع:
-${str}
-اكتب بالعامية المصرية:
-🔴 المواضيع الأكتر صعوبة (بالترتيب) مع سبب الصعوبة
-🟡 المواضيع المتوسطة
-🟢 المواضيع السهلة على الطلاب
-📚 خطة معالجة: إزاي تشرح المواضيع الصعبة بطريقة مختلفة
-🎬 أقترح أسلوب شرح مختلف لكل موضوع صعب`;
-  try {
-    const r = await callGemini(prompt);
-    setOutput('diff-output',r,'btn-diff','🎯 حلّل الصعوبة');
-  } catch(e){setOutput('diff-output','❌ '+e.message,'btn-diff','🎯 حلّل الصعوبة');}
-}
-
-// ══════════════════════════════════════════════
-// EXAM SCRIPT
-// ══════════════════════════════════════════════
-async function generateExamScript() {
-  const subject = document.getElementById('ex-subject').value.trim();
-  if(!subject){alert('اكتب اسم المادة');return;}
-  setLoading('btn-exam','exam-output',true);
-  const level = document.getElementById('ex-level').value;
-  const dur = document.getElementById('ex-duration').value;
-  const points = document.getElementById('ex-points').value;
-  const expected = document.getElementById('ex-expected').value;
-  const prompt = `أنت كاتب سكريبتات رياضيات محترف. اكتب سكريبت مراجعة سريعة قبل الامتحان.
-المادة: ${subject} | المرحلة: ${level} | المدة: ${dur}
-أهم النقاط: ${points}
-الأسئلة المتوقعة: ${expected||'لم تحدد'}
-الهيكل:
-⚡ [0-10ث] Hook: "امتحانك بكرة؟ في ${dur} هتعرف كل اللي محتاجه!"
-📌 [حسب المدة] راجع كل نقطة في 60-90 ثانية: القانون + مثال سريع + الخطأ الشائع
-🎯 [آخر 30ث] CTA: "حل ورقة الأسئلة في التعليقات"
-اكتب بالعامية المصرية مع إشارات المونتاج [زوم]، [اكتب على الشاشة]، [سريع].`;
-  try{const r=await callGemini(prompt);setOutput('exam-output',r,'btn-exam','📝 ولّد السكريبت');}
-  catch(e){setOutput('exam-output','❌ '+e.message,'btn-exam','📝 ولّد السكريبت');}
-}
-
-// ══════════════════════════════════════════════
-// EXERCISES GENERATOR
-// ══════════════════════════════════════════════
-async function generateExercises() {
-  const topic = document.getElementById('ex2-topic').value.trim();
-  if(!topic){alert('اكتب الموضوع');return;}
-  setLoading('btn-ex2','exercises-output',true);
-  const level = document.getElementById('ex2-level').value;
-  const count = document.getElementById('ex2-count').value;
-  const types = document.getElementById('ex2-types').value;
-  const solutions = document.getElementById('ex2-solutions').value;
-  const extra = document.getElementById('ex2-extra').value;
-  const solutionInstr = solutions==='yes'?'أضف الحل الكامل بعد كل سؤال':solutions==='hints'?'أضف تلميح واحد بعد كل سؤال':'لا تضع حلول';
-  const prompt = `أنت مدرس رياضيات محترف. اكتب ورقة تمارين احترافية كاملة.
-الموضوع: ${topic} | المستوى: ${level} | عدد الأسئلة: ${count} | النوع: ${types}
-${solutionInstr}
-${extra?'تعليمات: '+extra:''}
-الشكل:
-═══════════════════════════════
-ورقة تمارين: ${topic}
-المستوى: ${level} | العدد: ${count} سؤال
-═══════════════════════════════
-[الأسئلة مرقمة بوضوح مع مسافة كافية للحل]
-${solutions!=='no'?'[الحلول أو التلميحات بعد كل سؤال مفصولة بخط]':''}
-اكتب باللغة العربية الفصحى للأسئلة العلمية.`;
-  try{const r=await callGemini(prompt);setOutput('exercises-output',r,'btn-ex2','📄 ولّد الورقة');}
-  catch(e){setOutput('exercises-output','❌ '+e.message,'btn-ex2','📄 ولّد الورقة');}
-}
-
-function printExercises() {
-  const content = document.getElementById('exercises-output').textContent;
-  if(!content||content.includes('اضبط')){alert('ولّد الورقة الأول');return;}
-  const w = window.open('','_blank');
-  w.document.write(`<html dir="rtl"><head><title>ورقة تمارين</title><style>body{font-family:Arial;font-size:14px;line-height:1.8;padding:20px;direction:rtl}pre{white-space:pre-wrap;font-family:Arial}</style></head><body><pre>${content}</pre></body></html>`);
-  w.document.close(); w.print();
-}
-
-// ══════════════════════════════════════════════
-// HASHTAGS
-// ══════════════════════════════════════════════
-async function generateHashtags() {
-  const topic = document.getElementById('ht-topic').value.trim();
-  if(!topic){alert('اكتب الموضوع');return;}
-  setLoading('btn-ht','ht-output',true);
-  const platform = document.getElementById('ht-platform').value;
-  const lang = document.getElementById('ht-lang').value;
-  const langStr = lang==='ar'?'عربية فقط':lang==='en'?'إنجليزية فقط':'عربية وإنجليزية مختلطة';
-  const platInstr = platform==='all'?`اعمل قائمة منفصلة لكل منصة:
-يوتيوب: 10-15 هاشتاج (مزيج عام + متخصص)
-تيك توك: 5-8 هاشتاجات فايرل قصيرة
-إنستغرام: 20-30 هاشتاج (عام + متخصص + ترند)
-فيسبوك: 3-5 هاشتاجات بس`:
-  `اعمل ${platform==='youtube'?'10-15':platform==='tiktok'?'5-8':platform==='instagram'?'20-30':'3-5'} هاشتاج`;
-  const prompt = `أنت خبير سوشيال ميديا رياضيات. ولّد هاشتاجات للموضوع: "${topic}"
-اللغة: ${langStr}
-${platInstr}
-رتب الهاشتاجات من الأقوى للأضعف. اكتبها جاهزة للنسخ.`;
-  try{const r=await callGemini(prompt);setOutput('ht-output',r,'btn-ht','🏷️ ولّد الهاشتاجات');}
-  catch(e){setOutput('ht-output','❌ '+e.message,'btn-ht','🏷️ ولّد الهاشتاجات');}
-}
-
-// ══════════════════════════════════════════════
-// COMMENT REPLIES
-// ══════════════════════════════════════════════
-async function generateReply() {
-  const comment = document.getElementById('rep-comment').value.trim();
-  if(!comment){alert('الصق التعليق الأول');return;}
-  setLoading('btn-rep','rep-output',true);
-  const type = document.getElementById('rep-type').value;
-  const platform = document.getElementById('rep-platform').value;
-  const count = document.getElementById('rep-count').value;
-  const prompt = `أنت "نيوتن الرياضيات" — أقوى مدرس رياضيات على سوشيال ميديا في مصر.
-التعليق: "${comment}"
-النوع: ${type} | المنصة: ${platform}
-اكتب ${count} رد${count>1?' مختلف تماماً في الأسلوب':''} بالعامية المصرية.
-الشروط:
-- الرد يعكس كاريزما ومحبة حقيقية للطلاب
-- ${type.includes('سؤال')?'شرح مختصر مفيد + دعوة لمشاهدة فيديو أو قادم':''}
-- ${type.includes('مدح')?'شكر حار + تشجيع على الاستمرار + دعوة للشير':''}
-- ${type.includes('انتقاد')?'رد محترف إيجابي يحول الانتقاد لفرصة':''}
-- ${type.includes('تحدي')?'رد بثقة وذكاء يعزز مكانتك':''}
-- ${type.includes('حصص')?'رد يشجع التواصل بشكل طبيعي مش بيع مباشر':''}
-${count>1?'افصل بين الردود بـ ---':''}`;
-  try{const r=await callGemini(prompt);setOutput('rep-output',r,'btn-rep','💬 ولّد الردود');}
-  catch(e){setOutput('rep-output','❌ '+e.message,'btn-rep','💬 ولّد الردود');}
-}
-
-// ══════════════════════════════════════════════
-// CONTENT MAP
-// ══════════════════════════════════════════════
-let contentMap = JSON.parse(localStorage.getItem('content_map')||'[]');
-
-function addContentMapItem() {
-  const topic = document.getElementById('cmap-topic').value.trim();
-  const status = document.getElementById('cmap-status').value;
-  const views = document.getElementById('cmap-views').value;
-  if(!topic){alert('اكتب الموضوع');return;}
-  contentMap.push({id:Date.now(),topic,status,views:parseInt(views)||0});
-  localStorage.setItem('content_map',JSON.stringify(contentMap));
-  document.getElementById('cmap-topic').value='';
-  document.getElementById('cmap-views').value='';
-  renderContentMap();
-}
-
-function bulkAddTopics() {
-  const text = document.getElementById('cmap-bulk').value.trim();
-  if(!text)return;
-  text.split('
-').forEach(line=>{
-    const t = line.trim();
-    if(t) contentMap.push({id:Date.now()+Math.random(),topic:t,status:'done',views:0});
-  });
-  localStorage.setItem('content_map',JSON.stringify(contentMap));
-  document.getElementById('cmap-bulk').value='';
-  renderContentMap();
-}
-
-function renderContentMap() {
-  const el = document.getElementById('cmap-list');
-  if(!contentMap.length){el.innerHTML='<div class="alert info">أضف مواضيعك للبدء</div>';return;}
-  const icons = {done:'✅',partial:'🔶',planned:'📌'};
-  const labels = {done:'مغطى',partial:'جزئي',planned:'مخطط'};
-  el.innerHTML = contentMap.map(item=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--s2);border-radius:8px;gap:8px">
-      <span style="font-size:13px">${icons[item.status]} ${item.topic}</span>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-        ${item.views?`<span style="font-size:11px;color:var(--mut)">${item.views.toLocaleString('ar')} 👁</span>`:''}
-        <span style="font-size:10px;color:var(--mut)">${labels[item.status]}</span>
-        <button onclick="contentMap=contentMap.filter(x=>x.id!=${item.id});localStorage.setItem('content_map',JSON.stringify(contentMap));renderContentMap()" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button>
-      </div>
-    </div>`).join('');
-}
-
-async function analyzeContentMap() {
-  if(!contentMap.length){alert('أضف مواضيعك الأول');return;}
-  setLoading('btn-cmap','cmap-ai',true);
-  const done = contentMap.filter(x=>x.status==='done').map(x=>x.topic);
-  const partial = contentMap.filter(x=>x.status==='partial').map(x=>x.topic);
-  const planned = contentMap.filter(x=>x.status==='planned').map(x=>x.topic);
-  const prompt = `أنت مخطط محتوى رياضيات. حلّل خريطة المحتوى:
-مغطى: ${done.join('، ')||'لا شيء'}
-جزئي: ${partial.join('، ')||'لا شيء'}
-مخطط: ${planned.join('، ')||'لا شيء'}
-اكتب بالعامية المصرية:
-🗺️ الفجوات: مواضيع مهمة في الرياضيات مش موجودة خالص عند المدرس ده
-⭐ أهم 5 فيديوهات لازم يعملها دلوقتي بالترتيب
-🔄 المواضيع الجزئية: إيه الجزء الناقص في كل واحدة
-💡 فكرة سيريز: إزاي يربط مواضيعه في سلسلة متكاملة`;
-  try{const r=await callGemini(prompt);setOutput('cmap-ai',r,'btn-cmap','🤖 تحليل وكشف الفجوات');}
-  catch(e){setOutput('cmap-ai','❌ '+e.message,'btn-cmap','🤖 تحليل وكشف الفجوات');}
-}
-
-// ══════════════════════════════════════════════
-// AB TEST
-// ══════════════════════════════════════════════
-let abTests = JSON.parse(localStorage.getItem('ab_tests')||'[]');
-
-function addABTest() {
-  const title = document.getElementById('ab-title').value.trim();
-  const a = document.getElementById('ab-a').value.trim();
-  const b = document.getElementById('ab-b').value.trim();
-  if(!title||!a||!b){alert('أدخل كل البيانات');return;}
-  abTests.push({id:Date.now(),title,a,b,ctrA:null,ctrB:null,viewsA:null,viewsB:null,winner:null,date:new Date().toLocaleDateString('ar')});
-  localStorage.setItem('ab_tests',JSON.stringify(abTests));
-  ['ab-title','ab-a','ab-b'].forEach(id=>document.getElementById(id).value='');
-  renderABTests();
-}
-
-function renderABTests() {
-  const el = document.getElementById('ab-list');
-  const aiCard = document.getElementById('ab-ai-card');
-  if(!abTests.length){el.innerHTML='<div class="alert info">أضف اختبارات Thumbnail للبدء</div>';aiCard.style.display='none';return;}
-  aiCard.style.display='block';
-  el.innerHTML = abTests.map(t=>`
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-weight:700;font-size:14px">${t.title}</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <span style="font-size:11px;color:var(--mut)">${t.date}</span>
-          <button onclick="removeABTest(${t.id})" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid ${t.winner==='A'?'var(--acc3)':'var(--b2)'}">
-          <div style="font-size:12px;font-weight:700;color:var(--acc);margin-bottom:6px">🅰️ Thumbnail A</div>
-          <div style="font-size:12px;margin-bottom:8px">${t.a}</div>
-          <div style="display:flex;gap:8px">
-            <input type="text" placeholder="مشاهدات" id="ab-a-views-${t.id}" value="${t.viewsA||''}" style="width:80px;padding:4px 6px;font-size:11px">
-            <input type="text" placeholder="CTR %" id="ab-a-ctr-${t.id}" value="${t.ctrA||''}" style="width:70px;padding:4px 6px;font-size:11px">
-          </div>
-        </div>
-        <div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid ${t.winner==='B'?'var(--acc3)':'var(--b2)'}">
-          <div style="font-size:12px;font-weight:700;color:var(--acc2);margin-bottom:6px">🅱️ Thumbnail B</div>
-          <div style="font-size:12px;margin-bottom:8px">${t.b}</div>
-          <div style="display:flex;gap:8px">
-            <input type="text" placeholder="مشاهدات" id="ab-b-views-${t.id}" value="${t.viewsB||''}" style="width:80px;padding:4px 6px;font-size:11px">
-            <input type="text" placeholder="CTR %" id="ab-b-ctr-${t.id}" value="${t.ctrB||''}" style="width:70px;padding:4px 6px;font-size:11px">
-          </div>
-        </div>
-      </div>
-      <div style="margin-top:10px;display:flex;gap:8px">
-        <button class="btn btn-ghost" onclick="saveABResult(${t.id})" style="font-size:12px">💾 حفظ النتائج</button>
-        ${t.winner?`<span style="font-size:12px;color:var(--acc3);padding:6px 10px;background:var(--acc3)18;border-radius:8px">🏆 الفائز: Thumbnail ${t.winner}</span>`:''}
-      </div>
-    </div>`).join('');
-}
-
-function saveABResult(id) {
-  const t = abTests.find(x=>x.id===id);
-  if(!t)return;
-  t.viewsA = parseInt(document.getElementById(`ab-a-views-${id}`)?.value)||null;
-  t.viewsB = parseInt(document.getElementById(`ab-b-views-${id}`)?.value)||null;
-  t.ctrA = parseFloat(document.getElementById(`ab-a-ctr-${id}`)?.value)||null;
-  t.ctrB = parseFloat(document.getElementById(`ab-b-ctr-${id}`)?.value)||null;
-  if(t.ctrA && t.ctrB) t.winner = t.ctrA >= t.ctrB ? 'A' : 'B';
-  else if(t.viewsA && t.viewsB) t.winner = t.viewsA >= t.viewsB ? 'A' : 'B';
-  localStorage.setItem('ab_tests',JSON.stringify(abTests));
-  renderABTests();
-}
-
-function removeABTest(id){abTests=abTests.filter(x=>x.id!==id);localStorage.setItem('ab_tests',JSON.stringify(abTests));renderABTests();}
-
-async function analyzeAB() {
-  const withResults = abTests.filter(t=>t.winner);
-  if(!withResults.length){alert('سجّل نتائج اختبارات الأول');return;}
-  setLoading('btn-ab-analyze','ab-ai',true);
-  const str = withResults.map(t=>`الفيديو: "${t.title}" | A: "${t.a}" (CTR: ${t.ctrA}%) | B: "${t.b}" (CTR: ${t.ctrB}%) | الفائز: ${t.winner}`).join('
-');
-  const prompt = `حلّل نتائج A/B Testing للـ Thumbnails:
-${str}
-اكتب بالعامية المصرية:
-🎨 الأنماط: إيه اللي بيخلي الـ Thumbnail ينجح (ألوان؟ وجه؟ نص؟ أرقام؟)
-🏆 قواعد الـ Thumbnail الناجح لقناتك
-💡 توصيات للـ Thumbnails الجاية`;
-  try{const r=await callGemini(prompt);setOutput('ab-ai',r,'btn-ab-analyze','🔍 حلّل النتائج');}
-  catch(e){setOutput('ab-ai','❌ '+e.message,'btn-ab-analyze','🔍 حلّل النتائج');}
-}
-
-// ══════════════════════════════════════════════
-// COLLAB RADAR
-// ══════════════════════════════════════════════
-let collabChannels = JSON.parse(localStorage.getItem('collab_channels')||'[]');
-
-function addCollabChannel() {
-  const name = document.getElementById('col-ch-name').value.trim();
-  const subs = document.getElementById('col-ch-subs').value;
-  const type = document.getElementById('col-ch-type').value.trim();
-  const audience = document.getElementById('col-ch-audience').value.trim();
-  if(!name){alert('أدخل اسم القناة');return;}
-  collabChannels.push({id:Date.now(),name,subs:parseInt(subs)||0,type,audience});
-  localStorage.setItem('collab_channels',JSON.stringify(collabChannels));
-  ['col-ch-name','col-ch-subs','col-ch-type','col-ch-audience'].forEach(id=>document.getElementById(id).value='');
-  renderCollabList();
-}
-
-function renderCollabList() {
-  const el = document.getElementById('collab-list');
-  const aiCard = document.getElementById('collab-ai-card');
-  if(!collabChannels.length){el.innerHTML='<div class="alert info">أضف قنوات محتملة للتحليل</div>';if(aiCard)aiCard.style.display='none';return;}
-  if(aiCard)aiCard.style.display='block';
-  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">${collabChannels.map(ch=>`
-    <div class="script-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div>
-        <div style="font-weight:700;font-size:13px">📺 ${ch.name}</div>
-        <div style="font-size:11px;color:var(--mut)">${ch.type} · ${ch.audience} · ${(ch.subs/1000).toFixed(1)}K مشترك</div>
-      </div>
-      <button onclick="collabChannels=collabChannels.filter(x=>x.id!=${ch.id});localStorage.setItem('collab_channels',JSON.stringify(collabChannels));renderCollabList()" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button>
-    </div>`).join('')}</div>`;
-}
-
-async function analyzeCollab() {
-  if(!collabChannels.length){alert('أضف قنوات الأول');return;}
-  setLoading('btn-collab','collab-ai',true);
-  const mySubs = document.getElementById('col-my-subs').value;
-  const myViews = document.getElementById('col-my-views').value;
-  const myAudience = document.getElementById('col-my-audience').value;
-  const myStyle = document.getElementById('col-my-style').value;
-  const str = collabChannels.map(ch=>`${ch.name} (${(ch.subs/1000).toFixed(1)}K مشترك) | ${ch.type} | جمهور: ${ch.audience}`).join('
-');
-  const prompt = `أنت مستشار نمو. حلّل فرص التعاون لمدرس رياضيات مصري:
-بياناتي: ${mySubs} متابع، ${myViews} مشاهدة/شهر، جمهوري: ${myAudience}، أسلوبي: ${myStyle}
-القنوات المحتملة:
-${str}
-اكتب بالعامية المصرية:
-🤝 ترتيب القنوات من الأفضل للأقل ملاءمة للتعاون مع سبب كل واحدة
-💡 فكرة تعاون مناسبة لكل قناة (Collab idea)
-📈 متوقع تكسب كام متابع من كل تعاون؟
-⚠️ قنوات ينصح بعدم التعاون معها وليه`;
-  try{const r=await callGemini(prompt);setOutput('collab-ai',r,'btn-collab','🤝 حلّل فرص التعاون');}
-  catch(e){setOutput('collab-ai','❌ '+e.message,'btn-collab','🤝 حلّل فرص التعاون');}
-}
-
-// ══════════════════════════════════════════════
-// INIT NEW FEATURES
-// ══════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', function() {
-  renderStudentQuestions();
-  renderContentMap();
-  renderABTests();
-  renderCollabList();
-});
-
 // ═══ NEWTON PERSONALITY ═══
 const DEFAULT_PERSONA = `أنت المساعد السري لـ "نيوتن الرياضيات" — صانع المحتوى التعليمي الأقوى في مصر.
 
@@ -2899,6 +2305,599 @@ function updateAllStats() {
   if(totalEl && total > 0) totalEl.textContent = total.toLocaleString('ar');
   if(otherEl && (tt+fb+ig) > 0) otherEl.textContent = (tt+fb+ig).toLocaleString('ar');
 }
+// ══════════════════════════════════════════════
+// WEEKLY REPORT
+// ══════════════════════════════════════════════
+async function generateWeeklyReport() {
+  const views = document.getElementById('wr-views').value;
+  const prevViews = document.getElementById('wr-prev-views').value;
+  const newF = document.getElementById('wr-new-followers').value;
+  const vids = document.getElementById('wr-videos').value;
+  const best = document.getElementById('wr-best').value;
+  const worst = document.getElementById('wr-worst').value;
+  const notes = document.getElementById('wr-notes').value;
+  setLoading('btn-weekly','weekly-output',true);
+  const growthPct = prevViews ? (((views-prevViews)/prevViews)*100).toFixed(1) : '?';
+  const prompt = `أنت مساعد تحليل محتوى. اكتب تقرير أسبوعي احترافي بالعامية المصرية لمدرس رياضيات على سوشيال ميديا.
+البيانات:
+- مشاهدات هذا الأسبوع: ${views} (الأسبوع السابق: ${prevViews}) — نمو ${growthPct}%
+- متابعين جدد: ${newF}
+- فيديوهات منشورة: ${vids}
+- أفضل فيديو: ${best}
+- أسوأ فيديو: ${worst}
+- ملاحظاتي: ${notes}
+اكتب:
+📊 ملخص الأسبوع (3 جمل)
+🏆 إنجاز الأسبوع
+⚠️ تحذير/نقطة ضعف
+🎯 توصية واحدة للأسبوع الجاي
+💪 جملة تحفيز للاستمرار`;
+  try {
+    const r = await callGemini(prompt);
+    setOutput('weekly-output', r, 'btn-weekly', '📋 ولّد التقرير');
+  } catch(e) { setOutput('weekly-output','❌ '+e.message,'btn-weekly','📋 ولّد التقرير'); }
+}
+
+async function sendWeeklyToTelegram() {
+  const text = document.getElementById('weekly-output').textContent;
+  if (!text || text.includes('أدخل')) { alert('ولّد التقرير الأول'); return; }
+  const btn = document.getElementById('btn-send-weekly');
+  btn.disabled=true; btn.textContent='⏳ جاري...';
+  await sendTelegram('📋 التقرير الأسبوعي:
+
+'+text);
+  btn.textContent='✅ تم الإرسال'; btn.disabled=false;
+  setTimeout(()=>{btn.textContent='📱 إرسال تيليجرام';},2000);
+}
+
+// ══════════════════════════════════════════════
+// PLATFORM COMPARE
+// ══════════════════════════════════════════════
+async function analyzePlatforms() {
+  setLoading('btn-pc','pc-ai',true);
+  const plats = ['yt','tt','fb','ig'];
+  const names = {yt:'يوتيوب',tt:'تيك توك',fb:'فيسبوك',ig:'إنستغرام'};
+  let data = {};
+  plats.forEach(p => {
+    data[p] = {
+      views: parseInt(document.getElementById(`pc-${p}-views`).value)||0,
+      followers: parseInt(document.getElementById(`pc-${p}-followers`).value)||0,
+      likes: parseInt(document.getElementById(`pc-${p}-likes`).value)||0,
+      comments: parseInt(document.getElementById(`pc-${p}-comments`).value)||0,
+      shares: parseInt(document.getElementById(`pc-${p}-shares`).value)||0,
+      time: parseInt(document.getElementById(`pc-${p}-time`).value)||1,
+    };
+    data[p].engRate = data[p].views > 0 ? (((data[p].likes+data[p].comments+data[p].shares)/data[p].views)*100).toFixed(2) : 0;
+    data[p].followersPerHour = data[p].time > 0 ? (data[p].followers/data[p].time).toFixed(1) : 0;
+    data[p].viewsPerHour = data[p].time > 0 ? Math.round(data[p].views/data[p].time) : 0;
+  });
+  const bestEng = plats.reduce((a,b)=>data[a].engRate>data[b].engRate?a:b);
+  const bestROI = plats.reduce((a,b)=>data[a].followersPerHour>data[b].followersPerHour?a:b);
+  const resEl = document.getElementById('pc-results');
+  resEl.classList.remove('empty');
+  resEl.textContent = plats.map(p=>`${names[p]}:
+  👁 ${data[p].views.toLocaleString('ar')} مشاهدة
+  👥 ${data[p].followers} متابع جديد
+  💚 ${data[p].engRate}% تفاعل
+  ⚡ ${data[p].followersPerHour} متابع/ساعة عمل
+  📈 ${data[p].viewsPerHour.toLocaleString('ar')} مشاهدة/ساعة`).join('
+
+') + `
+
+🏆 أعلى تفاعل: ${names[bestEng]}
+💡 أفضل ROI: ${names[bestROI]}`;
+  const str = plats.map(p=>`${names[p]}: ${data[p].views} مشاهدة، ${data[p].followers} متابع جديد، ${data[p].engRate}% تفاعل، ${data[p].time} ساعة عمل`).join(' | ');
+  const prompt = `أنت مستشار محتوى رياضيات. حلل هذه البيانات لمدرس رياضيات مصري:
+${str}
+اكتب بالعامية المصرية:
+🏆 المنصة الأفضل له وليه
+⚡ المنصة الأفضل ROI (أكتر نتيجة بأقل وقت)
+🎯 توزيع مقترح للوقت (مثال: 50% تيك توك، 30% يوتيوب...)
+🚫 منصة يخفف عليها وليه`;
+  try {
+    const r = await callGemini(prompt);
+    setOutput('pc-ai', r, 'btn-pc', '📊 حلّل وقارن');
+  } catch(e) { setOutput('pc-ai','❌ '+e.message,'btn-pc','📊 حلّل وقارن'); }
+}
+
+// ══════════════════════════════════════════════
+// INCOME CALCULATOR
+// ══════════════════════════════════════════════
+document.addEventListener('change', function(e){
+  if(e.target.id==='inc-has-course') {
+    document.getElementById('inc-course-row').style.display = e.target.value==='1' ? 'flex' : 'none';
+  }
+});
+
+async function calcIncome() {
+  const ytViews = parseInt(document.getElementById('inc-yt-views').value)||0;
+  const rpm = parseFloat(document.getElementById('inc-rpm').value)||1.5;
+  const students = parseInt(document.getElementById('inc-students').value)||0;
+  const price = parseInt(document.getElementById('inc-price').value)||0;
+  const sessions = parseInt(document.getElementById('inc-sessions').value)||0;
+  const hasCourse = document.getElementById('inc-has-course').value==='1';
+  const ytIncome = (ytViews/1000*rpm);
+  const lessonsIncome = students*price*sessions;
+  const courseRev = hasCourse ? document.getElementById('inc-course-rev').value : '0';
+  const courseNum = parseFloat(courseRev.replace(/[^0-9.]/g,''))||0;
+  const total = ytIncome + lessonsIncome + courseNum;
+  const outEl = document.getElementById('income-output');
+  outEl.classList.remove('empty');
+  outEl.textContent = `💰 تفاصيل دخلك الشهري:
+
+▶ يوتيوب (${ytViews.toLocaleString()} مشاهدة × $${rpm} RPM):
+   $${ytIncome.toFixed(0)} = ~${Math.round(ytIncome*50).toLocaleString('ar')} جنيه
+
+📚 حصص خاصة (${students} طالب × ${price}ج × ${sessions} حصة):
+   ${lessonsIncome.toLocaleString('ar')} جنيه
+${hasCourse?`
+🎓 كورسات مسجلة:
+   ~${courseNum.toLocaleString('ar')} جنيه
+`:''}
+══════════════
+💰 الإجمالي الشهري:
+   ~${Math.round(total*50+lessonsIncome).toLocaleString('ar')} جنيه`;
+  const growEl = document.getElementById('income-growth');
+  growEl.classList.remove('empty');
+  growEl.textContent = `🚀 لو ضاعفت متابعيك:
+× 2 متابعين → دخل يوتيوب: $${(ytIncome*1.8).toFixed(0)}
+× 5 متابعين → دخل يوتيوب: $${(ytIncome*4).toFixed(0)}
+
+📚 لو زدت طلابك:
+5 طلاب أضافيين → +${(5*price*sessions).toLocaleString('ar')} جنيه/شهر
+10 طلاب أضافيين → +${(10*price*sessions).toLocaleString('ar')} جنيه/شهر
+
+🎓 لو أطلقت كورس بـ 500ج:
+20 مشتري/شهر → +10,000 جنيه
+50 مشتري/شهر → +25,000 جنيه`;
+}
+
+// ══════════════════════════════════════════════
+// STUDENT QUESTIONS
+// ══════════════════════════════════════════════
+let studentQuestions = JSON.parse(localStorage.getItem('student_questions')||'[]');
+
+function addStudentQuestion() {
+  const q = document.getElementById('sq-question').value.trim();
+  const topic = document.getElementById('sq-topic').value.trim();
+  const source = document.getElementById('sq-source').value;
+  if (!q) { alert('اكتب السؤال'); return; }
+  const existing = studentQuestions.find(x => x.q.toLowerCase() === q.toLowerCase());
+  if (existing) { existing.count++; existing.sources.push(source); }
+  else studentQuestions.push({id:Date.now(),q,topic,sources:[source],count:1,date:new Date().toLocaleDateString('ar')});
+  localStorage.setItem('student_questions', JSON.stringify(studentQuestions));
+  document.getElementById('sq-question').value='';
+  document.getElementById('sq-topic').value='';
+  renderStudentQuestions();
+}
+
+async function bulkAddQuestions() {
+  const text = document.getElementById('sq-bulk').value.trim();
+  if (!text) return;
+  setLoading('btn-sq-analyze','sq-ai-output',true);
+  const prompt = `استخرج كل الأسئلة الرياضية من هذه التعليقات. أعد قائمة JSON فقط:
+[{"q":"السؤال","topic":"الموضوع"}]
+التعليقات:
+${text}`;
+  try {
+    const r = await callGemini(prompt);
+    const clean = r.replace(/```json|```/g,'').trim();
+    const arr = JSON.parse(clean);
+    arr.forEach(item => {
+      if(item.q) studentQuestions.push({id:Date.now()+Math.random(),q:item.q,topic:item.topic||'عام',sources:['تعليقات'],count:1,date:new Date().toLocaleDateString('ar')});
+    });
+    localStorage.setItem('student_questions', JSON.stringify(studentQuestions));
+    document.getElementById('sq-bulk').value='';
+    renderStudentQuestions();
+    document.getElementById('btn-sq-analyze').disabled=false;
+    document.getElementById('btn-sq-analyze').textContent='🤖 تحليل Gemini';
+  } catch(e) {
+    setOutput('sq-ai-output','❌ '+e.message,'btn-sq-analyze','🤖 تحليل Gemini');
+  }
+}
+
+function renderStudentQuestions() {
+  const sorted = [...studentQuestions].sort((a,b)=>b.count-a.count);
+  const el = document.getElementById('sq-list');
+  if (!sorted.length) { el.innerHTML='<div class="alert info">لا توجد أسئلة بعد</div>'; return; }
+  el.innerHTML = sorted.slice(0,30).map(q=>`
+    <div class="script-card" style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px">${q.q}</div>
+        <div style="font-size:11px;color:var(--mut)">${q.topic||'عام'} · ${q.date}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <span style="background:var(--acc)22;color:var(--acc);font-size:12px;font-weight:700;padding:3px 8px;border-radius:20px">×${q.count}</span>
+        <button onclick="removeQuestion(${q.id})" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:14px">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function removeQuestion(id) {
+  studentQuestions = studentQuestions.filter(q=>q.id!==id);
+  localStorage.setItem('student_questions',JSON.stringify(studentQuestions));
+  renderStudentQuestions();
+}
+
+async function analyzeStudentQuestions() {
+  if (!studentQuestions.length) { alert('أضف أسئلة الأول'); return; }
+  setLoading('btn-sq-analyze','sq-ai-output',true);
+  const sorted = [...studentQuestions].sort((a,b)=>b.count-a.count).slice(0,20);
+  const str = sorted.map(q=>`"${q.q}" (${q.topic}) — تكررت ${q.count} مرة`).join('
+');
+  const prompt = `أنت مستشار محتوى لمدرس رياضيات. حلّل أسئلة الطلاب:
+${str}
+اكتب بالعامية المصرية:
+🎬 أولوية الفيديوهات: أهم 5 فيديوهات لازم تعملها فوراً مع عنوان كل واحد
+🧩 الأنماط: إيه المواضيع اللي فيها فجوات في فهم الطلاب؟
+💡 فكرة سيريز: إزاي تحول الأسئلة دي لسلسلة فيديوهات متكاملة`;
+  try {
+    const r = await callGemini(prompt);
+    setOutput('sq-ai-output',r,'btn-sq-analyze','🤖 تحليل Gemini');
+  } catch(e) { setOutput('sq-ai-output','❌ '+e.message,'btn-sq-analyze','🤖 تحليل Gemini'); }
+}
+
+// ══════════════════════════════════════════════
+// DIFFICULTY ANALYZER
+// ══════════════════════════════════════════════
+function addDiffRow() {
+  const row = document.createElement('div');
+  row.className='diff-row';
+  row.style='display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px';
+  row.innerHTML=`<div class="form-row"><input type="text" placeholder="الموضوع"></div><div class="form-row"><input type="text" placeholder="مشاهدات"></div><div class="form-row"><input type="text" placeholder="تعليقات صعبة"></div><div class="form-row"><input type="text" placeholder="retention %"></div><button class="btn btn-ghost" onclick="this.closest('.diff-row').remove()" style="height:38px;padding:0 12px">✕</button>`;
+  document.getElementById('diff-rows').appendChild(row);
+}
+
+async function analyzeDifficulty() {
+  const rows = document.querySelectorAll('.diff-row');
+  const topics = [];
+  rows.forEach(r=>{
+    const ins = r.querySelectorAll('input');
+    if(ins[0].value) topics.push({topic:ins[0].value,views:ins[1].value||0,hardComments:ins[2].value||0,retention:ins[3].value||0});
+  });
+  if(topics.length<2){alert('أضف موضوعين على الأقل');return;}
+  setLoading('btn-diff','diff-output',true);
+  const str = topics.map(t=>`"${t.topic}": ${t.views} مشاهدة، ${t.hardComments} تعليق "مش فاهم"، retention ${t.retention}%`).join('
+');
+  const prompt = `أنت محلل تعليمي. حلّل صعوبة هذه المواضيع:
+${str}
+اكتب بالعامية المصرية:
+🔴 المواضيع الأكتر صعوبة (بالترتيب) مع سبب الصعوبة
+🟡 المواضيع المتوسطة
+🟢 المواضيع السهلة على الطلاب
+📚 خطة معالجة: إزاي تشرح المواضيع الصعبة بطريقة مختلفة
+🎬 أقترح أسلوب شرح مختلف لكل موضوع صعب`;
+  try {
+    const r = await callGemini(prompt);
+    setOutput('diff-output',r,'btn-diff','🎯 حلّل الصعوبة');
+  } catch(e){setOutput('diff-output','❌ '+e.message,'btn-diff','🎯 حلّل الصعوبة');}
+}
+
+// ══════════════════════════════════════════════
+// EXAM SCRIPT
+// ══════════════════════════════════════════════
+async function generateExamScript() {
+  const subject = document.getElementById('ex-subject').value.trim();
+  if(!subject){alert('اكتب اسم المادة');return;}
+  setLoading('btn-exam','exam-output',true);
+  const level = document.getElementById('ex-level').value;
+  const dur = document.getElementById('ex-duration').value;
+  const points = document.getElementById('ex-points').value;
+  const expected = document.getElementById('ex-expected').value;
+  const prompt = `أنت كاتب سكريبتات رياضيات محترف. اكتب سكريبت مراجعة سريعة قبل الامتحان.
+المادة: ${subject} | المرحلة: ${level} | المدة: ${dur}
+أهم النقاط: ${points}
+الأسئلة المتوقعة: ${expected||'لم تحدد'}
+الهيكل:
+⚡ [0-10ث] Hook: "امتحانك بكرة؟ في ${dur} هتعرف كل اللي محتاجه!"
+📌 [حسب المدة] راجع كل نقطة في 60-90 ثانية: القانون + مثال سريع + الخطأ الشائع
+🎯 [آخر 30ث] CTA: "حل ورقة الأسئلة في التعليقات"
+اكتب بالعامية المصرية مع إشارات المونتاج [زوم]، [اكتب على الشاشة]، [سريع].`;
+  try{const r=await callGemini(prompt);setOutput('exam-output',r,'btn-exam','📝 ولّد السكريبت');}
+  catch(e){setOutput('exam-output','❌ '+e.message,'btn-exam','📝 ولّد السكريبت');}
+}
+
+// ══════════════════════════════════════════════
+// EXERCISES GENERATOR
+// ══════════════════════════════════════════════
+async function generateExercises() {
+  const topic = document.getElementById('ex2-topic').value.trim();
+  if(!topic){alert('اكتب الموضوع');return;}
+  setLoading('btn-ex2','exercises-output',true);
+  const level = document.getElementById('ex2-level').value;
+  const count = document.getElementById('ex2-count').value;
+  const types = document.getElementById('ex2-types').value;
+  const solutions = document.getElementById('ex2-solutions').value;
+  const extra = document.getElementById('ex2-extra').value;
+  const solutionInstr = solutions==='yes'?'أضف الحل الكامل بعد كل سؤال':solutions==='hints'?'أضف تلميح واحد بعد كل سؤال':'لا تضع حلول';
+  const prompt = `أنت مدرس رياضيات محترف. اكتب ورقة تمارين احترافية كاملة.
+الموضوع: ${topic} | المستوى: ${level} | عدد الأسئلة: ${count} | النوع: ${types}
+${solutionInstr}
+${extra?'تعليمات: '+extra:''}
+الشكل:
+═══════════════════════════════
+ورقة تمارين: ${topic}
+المستوى: ${level} | العدد: ${count} سؤال
+═══════════════════════════════
+[الأسئلة مرقمة بوضوح مع مسافة كافية للحل]
+${solutions!=='no'?'[الحلول أو التلميحات بعد كل سؤال مفصولة بخط]':''}
+اكتب باللغة العربية الفصحى للأسئلة العلمية.`;
+  try{const r=await callGemini(prompt);setOutput('exercises-output',r,'btn-ex2','📄 ولّد الورقة');}
+  catch(e){setOutput('exercises-output','❌ '+e.message,'btn-ex2','📄 ولّد الورقة');}
+}
+
+function printExercises() {
+  const content = document.getElementById('exercises-output').textContent;
+  if(!content||content.includes('اضبط')){alert('ولّد الورقة الأول');return;}
+  const w = window.open('','_blank');
+  w.document.write(`<html dir="rtl"><head><title>ورقة تمارين</title><style>body{font-family:Arial;font-size:14px;line-height:1.8;padding:20px;direction:rtl}pre{white-space:pre-wrap;font-family:Arial}</style></head><body><pre>${content}</pre></body></html>`);
+  w.document.close(); w.print();
+}
+
+// ══════════════════════════════════════════════
+// HASHTAGS
+// ══════════════════════════════════════════════
+async function generateHashtags() {
+  const topic = document.getElementById('ht-topic').value.trim();
+  if(!topic){alert('اكتب الموضوع');return;}
+  setLoading('btn-ht','ht-output',true);
+  const platform = document.getElementById('ht-platform').value;
+  const lang = document.getElementById('ht-lang').value;
+  const langStr = lang==='ar'?'عربية فقط':lang==='en'?'إنجليزية فقط':'عربية وإنجليزية مختلطة';
+  const platInstr = platform==='all'?`اعمل قائمة منفصلة لكل منصة:
+يوتيوب: 10-15 هاشتاج (مزيج عام + متخصص)
+تيك توك: 5-8 هاشتاجات فايرل قصيرة
+إنستغرام: 20-30 هاشتاج (عام + متخصص + ترند)
+فيسبوك: 3-5 هاشتاجات بس`:
+  `اعمل ${platform==='youtube'?'10-15':platform==='tiktok'?'5-8':platform==='instagram'?'20-30':'3-5'} هاشتاج`;
+  const prompt = `أنت خبير سوشيال ميديا رياضيات. ولّد هاشتاجات للموضوع: "${topic}"
+اللغة: ${langStr}
+${platInstr}
+رتب الهاشتاجات من الأقوى للأضعف. اكتبها جاهزة للنسخ.`;
+  try{const r=await callGemini(prompt);setOutput('ht-output',r,'btn-ht','🏷️ ولّد الهاشتاجات');}
+  catch(e){setOutput('ht-output','❌ '+e.message,'btn-ht','🏷️ ولّد الهاشتاجات');}
+}
+
+// ══════════════════════════════════════════════
+// COMMENT REPLIES
+// ══════════════════════════════════════════════
+async function generateReply() {
+  const comment = document.getElementById('rep-comment').value.trim();
+  if(!comment){alert('الصق التعليق الأول');return;}
+  setLoading('btn-rep','rep-output',true);
+  const type = document.getElementById('rep-type').value;
+  const platform = document.getElementById('rep-platform').value;
+  const count = document.getElementById('rep-count').value;
+  const prompt = `أنت "نيوتن الرياضيات" — أقوى مدرس رياضيات على سوشيال ميديا في مصر.
+التعليق: "${comment}"
+النوع: ${type} | المنصة: ${platform}
+اكتب ${count} رد${count>1?' مختلف تماماً في الأسلوب':''} بالعامية المصرية.
+الشروط:
+- الرد يعكس كاريزما ومحبة حقيقية للطلاب
+- ${type.includes('سؤال')?'شرح مختصر مفيد + دعوة لمشاهدة فيديو أو قادم':''}
+- ${type.includes('مدح')?'شكر حار + تشجيع على الاستمرار + دعوة للشير':''}
+- ${type.includes('انتقاد')?'رد محترف إيجابي يحول الانتقاد لفرصة':''}
+- ${type.includes('تحدي')?'رد بثقة وذكاء يعزز مكانتك':''}
+- ${type.includes('حصص')?'رد يشجع التواصل بشكل طبيعي مش بيع مباشر':''}
+${count>1?'افصل بين الردود بـ ---':''}`;
+  try{const r=await callGemini(prompt);setOutput('rep-output',r,'btn-rep','💬 ولّد الردود');}
+  catch(e){setOutput('rep-output','❌ '+e.message,'btn-rep','💬 ولّد الردود');}
+}
+
+// ══════════════════════════════════════════════
+// CONTENT MAP
+// ══════════════════════════════════════════════
+let contentMap = JSON.parse(localStorage.getItem('content_map')||'[]');
+
+function addContentMapItem() {
+  const topic = document.getElementById('cmap-topic').value.trim();
+  const status = document.getElementById('cmap-status').value;
+  const views = document.getElementById('cmap-views').value;
+  if(!topic){alert('اكتب الموضوع');return;}
+  contentMap.push({id:Date.now(),topic,status,views:parseInt(views)||0});
+  localStorage.setItem('content_map',JSON.stringify(contentMap));
+  document.getElementById('cmap-topic').value='';
+  document.getElementById('cmap-views').value='';
+  renderContentMap();
+}
+
+function bulkAddTopics() {
+  const text = document.getElementById('cmap-bulk').value.trim();
+  if(!text)return;
+  text.split('
+').forEach(line=>{
+    const t = line.trim();
+    if(t) contentMap.push({id:Date.now()+Math.random(),topic:t,status:'done',views:0});
+  });
+  localStorage.setItem('content_map',JSON.stringify(contentMap));
+  document.getElementById('cmap-bulk').value='';
+  renderContentMap();
+}
+
+function renderContentMap() {
+  const el = document.getElementById('cmap-list');
+  if(!contentMap.length){el.innerHTML='<div class="alert info">أضف مواضيعك للبدء</div>';return;}
+  const icons = {done:'✅',partial:'🔶',planned:'📌'};
+  const labels = {done:'مغطى',partial:'جزئي',planned:'مخطط'};
+  el.innerHTML = contentMap.map(item=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--s2);border-radius:8px;gap:8px">
+      <span style="font-size:13px">${icons[item.status]} ${item.topic}</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        ${item.views?`<span style="font-size:11px;color:var(--mut)">${item.views.toLocaleString('ar')} 👁</span>`:''}
+        <span style="font-size:10px;color:var(--mut)">${labels[item.status]}</span>
+        <button onclick="contentMap=contentMap.filter(x=>x.id!=${item.id});localStorage.setItem('content_map',JSON.stringify(contentMap));renderContentMap()" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+async function analyzeContentMap() {
+  if(!contentMap.length){alert('أضف مواضيعك الأول');return;}
+  setLoading('btn-cmap','cmap-ai',true);
+  const done = contentMap.filter(x=>x.status==='done').map(x=>x.topic);
+  const partial = contentMap.filter(x=>x.status==='partial').map(x=>x.topic);
+  const planned = contentMap.filter(x=>x.status==='planned').map(x=>x.topic);
+  const prompt = `أنت مخطط محتوى رياضيات. حلّل خريطة المحتوى:
+مغطى: ${done.join('، ')||'لا شيء'}
+جزئي: ${partial.join('، ')||'لا شيء'}
+مخطط: ${planned.join('، ')||'لا شيء'}
+اكتب بالعامية المصرية:
+🗺️ الفجوات: مواضيع مهمة في الرياضيات مش موجودة خالص عند المدرس ده
+⭐ أهم 5 فيديوهات لازم يعملها دلوقتي بالترتيب
+🔄 المواضيع الجزئية: إيه الجزء الناقص في كل واحدة
+💡 فكرة سيريز: إزاي يربط مواضيعه في سلسلة متكاملة`;
+  try{const r=await callGemini(prompt);setOutput('cmap-ai',r,'btn-cmap','🤖 تحليل وكشف الفجوات');}
+  catch(e){setOutput('cmap-ai','❌ '+e.message,'btn-cmap','🤖 تحليل وكشف الفجوات');}
+}
+
+// ══════════════════════════════════════════════
+// AB TEST
+// ══════════════════════════════════════════════
+let abTests = JSON.parse(localStorage.getItem('ab_tests')||'[]');
+
+function addABTest() {
+  const title = document.getElementById('ab-title').value.trim();
+  const a = document.getElementById('ab-a').value.trim();
+  const b = document.getElementById('ab-b').value.trim();
+  if(!title||!a||!b){alert('أدخل كل البيانات');return;}
+  abTests.push({id:Date.now(),title,a,b,ctrA:null,ctrB:null,viewsA:null,viewsB:null,winner:null,date:new Date().toLocaleDateString('ar')});
+  localStorage.setItem('ab_tests',JSON.stringify(abTests));
+  ['ab-title','ab-a','ab-b'].forEach(id=>document.getElementById(id).value='');
+  renderABTests();
+}
+
+function renderABTests() {
+  const el = document.getElementById('ab-list');
+  const aiCard = document.getElementById('ab-ai-card');
+  if(!abTests.length){el.innerHTML='<div class="alert info">أضف اختبارات Thumbnail للبدء</div>';aiCard.style.display='none';return;}
+  aiCard.style.display='block';
+  el.innerHTML = abTests.map(t=>`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-weight:700;font-size:14px">${t.title}</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;color:var(--mut)">${t.date}</span>
+          <button onclick="removeABTest(${t.id})" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid ${t.winner==='A'?'var(--acc3)':'var(--b2)'}">
+          <div style="font-size:12px;font-weight:700;color:var(--acc);margin-bottom:6px">🅰️ Thumbnail A</div>
+          <div style="font-size:12px;margin-bottom:8px">${t.a}</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" placeholder="مشاهدات" id="ab-a-views-${t.id}" value="${t.viewsA||''}" style="width:80px;padding:4px 6px;font-size:11px">
+            <input type="text" placeholder="CTR %" id="ab-a-ctr-${t.id}" value="${t.ctrA||''}" style="width:70px;padding:4px 6px;font-size:11px">
+          </div>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid ${t.winner==='B'?'var(--acc3)':'var(--b2)'}">
+          <div style="font-size:12px;font-weight:700;color:var(--acc2);margin-bottom:6px">🅱️ Thumbnail B</div>
+          <div style="font-size:12px;margin-bottom:8px">${t.b}</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" placeholder="مشاهدات" id="ab-b-views-${t.id}" value="${t.viewsB||''}" style="width:80px;padding:4px 6px;font-size:11px">
+            <input type="text" placeholder="CTR %" id="ab-b-ctr-${t.id}" value="${t.ctrB||''}" style="width:70px;padding:4px 6px;font-size:11px">
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="saveABResult(${t.id})" style="font-size:12px">💾 حفظ النتائج</button>
+        ${t.winner?`<span style="font-size:12px;color:var(--acc3);padding:6px 10px;background:var(--acc3)18;border-radius:8px">🏆 الفائز: Thumbnail ${t.winner}</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function saveABResult(id) {
+  const t = abTests.find(x=>x.id===id);
+  if(!t)return;
+  t.viewsA = parseInt(document.getElementById(`ab-a-views-${id}`)?.value)||null;
+  t.viewsB = parseInt(document.getElementById(`ab-b-views-${id}`)?.value)||null;
+  t.ctrA = parseFloat(document.getElementById(`ab-a-ctr-${id}`)?.value)||null;
+  t.ctrB = parseFloat(document.getElementById(`ab-b-ctr-${id}`)?.value)||null;
+  if(t.ctrA && t.ctrB) t.winner = t.ctrA >= t.ctrB ? 'A' : 'B';
+  else if(t.viewsA && t.viewsB) t.winner = t.viewsA >= t.viewsB ? 'A' : 'B';
+  localStorage.setItem('ab_tests',JSON.stringify(abTests));
+  renderABTests();
+}
+
+function removeABTest(id){abTests=abTests.filter(x=>x.id!==id);localStorage.setItem('ab_tests',JSON.stringify(abTests));renderABTests();}
+
+async function analyzeAB() {
+  const withResults = abTests.filter(t=>t.winner);
+  if(!withResults.length){alert('سجّل نتائج اختبارات الأول');return;}
+  setLoading('btn-ab-analyze','ab-ai',true);
+  const str = withResults.map(t=>`الفيديو: "${t.title}" | A: "${t.a}" (CTR: ${t.ctrA}%) | B: "${t.b}" (CTR: ${t.ctrB}%) | الفائز: ${t.winner}`).join('
+');
+  const prompt = `حلّل نتائج A/B Testing للـ Thumbnails:
+${str}
+اكتب بالعامية المصرية:
+🎨 الأنماط: إيه اللي بيخلي الـ Thumbnail ينجح (ألوان؟ وجه؟ نص؟ أرقام؟)
+🏆 قواعد الـ Thumbnail الناجح لقناتك
+💡 توصيات للـ Thumbnails الجاية`;
+  try{const r=await callGemini(prompt);setOutput('ab-ai',r,'btn-ab-analyze','🔍 حلّل النتائج');}
+  catch(e){setOutput('ab-ai','❌ '+e.message,'btn-ab-analyze','🔍 حلّل النتائج');}
+}
+
+// ══════════════════════════════════════════════
+// COLLAB RADAR
+// ══════════════════════════════════════════════
+let collabChannels = JSON.parse(localStorage.getItem('collab_channels')||'[]');
+
+function addCollabChannel() {
+  const name = document.getElementById('col-ch-name').value.trim();
+  const subs = document.getElementById('col-ch-subs').value;
+  const type = document.getElementById('col-ch-type').value.trim();
+  const audience = document.getElementById('col-ch-audience').value.trim();
+  if(!name){alert('أدخل اسم القناة');return;}
+  collabChannels.push({id:Date.now(),name,subs:parseInt(subs)||0,type,audience});
+  localStorage.setItem('collab_channels',JSON.stringify(collabChannels));
+  ['col-ch-name','col-ch-subs','col-ch-type','col-ch-audience'].forEach(id=>document.getElementById(id).value='');
+  renderCollabList();
+}
+
+function renderCollabList() {
+  const el = document.getElementById('collab-list');
+  const aiCard = document.getElementById('collab-ai-card');
+  if(!collabChannels.length){el.innerHTML='<div class="alert info">أضف قنوات محتملة للتحليل</div>';if(aiCard)aiCard.style.display='none';return;}
+  if(aiCard)aiCard.style.display='block';
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">${collabChannels.map(ch=>`
+    <div class="script-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-weight:700;font-size:13px">📺 ${ch.name}</div>
+        <div style="font-size:11px;color:var(--mut)">${ch.type} · ${ch.audience} · ${(ch.subs/1000).toFixed(1)}K مشترك</div>
+      </div>
+      <button onclick="collabChannels=collabChannels.filter(x=>x.id!=${ch.id});localStorage.setItem('collab_channels',JSON.stringify(collabChannels));renderCollabList()" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button>
+    </div>`).join('')}</div>`;
+}
+
+async function analyzeCollab() {
+  if(!collabChannels.length){alert('أضف قنوات الأول');return;}
+  setLoading('btn-collab','collab-ai',true);
+  const mySubs = document.getElementById('col-my-subs').value;
+  const myViews = document.getElementById('col-my-views').value;
+  const myAudience = document.getElementById('col-my-audience').value;
+  const myStyle = document.getElementById('col-my-style').value;
+  const str = collabChannels.map(ch=>`${ch.name} (${(ch.subs/1000).toFixed(1)}K مشترك) | ${ch.type} | جمهور: ${ch.audience}`).join('
+');
+  const prompt = `أنت مستشار نمو. حلّل فرص التعاون لمدرس رياضيات مصري:
+بياناتي: ${mySubs} متابع، ${myViews} مشاهدة/شهر، جمهوري: ${myAudience}، أسلوبي: ${myStyle}
+القنوات المحتملة:
+${str}
+اكتب بالعامية المصرية:
+🤝 ترتيب القنوات من الأفضل للأقل ملاءمة للتعاون مع سبب كل واحدة
+💡 فكرة تعاون مناسبة لكل قناة (Collab idea)
+📈 متوقع تكسب كام متابع من كل تعاون؟
+⚠️ قنوات ينصح بعدم التعاون معها وليه`;
+  try{const r=await callGemini(prompt);setOutput('collab-ai',r,'btn-collab','🤝 حلّل فرص التعاون');}
+  catch(e){setOutput('collab-ai','❌ '+e.message,'btn-collab','🤝 حلّل فرص التعاون');}
+}
+
+// ══════════════════════════════════════════════
+// INIT NEW FEATURES
+// ══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  renderStudentQuestions();
+  renderContentMap();
+  renderABTests();
+  renderCollabList();
+});
 
 function saveToBank() {
   const content = document.getElementById('content-output').textContent;
