@@ -206,27 +206,27 @@ label{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-botto
   </div>
 
   <div class="nav-section">الحساب</div>
-  <div class="nav-item" onclick="showPage('dashboard')">
-    <span class="ico">🏠</span> الداشبورد
-  </div>
-  <div class="nav-item" onclick="showPage('growth')">
-    <span class="ico">📈</span> تتبع النمو
-  </div>
-  <div class="nav-item" onclick="showPage('topvideos')">
-    <span class="ico">🏆</span> أفضل الفيديوهات
-  </div>
-  <div class="nav-item" onclick="showPage('alerts')">
-    <span class="ico">⚠️</span> كاشف التراجع
-  </div>
-  <div class="nav-item" onclick="showPage('spy')">
-    <span class="ico">🔭</span> رادار المنافسين
-  </div>
-  <div class="nav-item" onclick="showPage('monthly')">
-    <span class="ico">🗓️</span> الخطة الشهرية
-  </div>
-  <div class="nav-item" onclick="showPage('schedule')">
-    <span class="ico">📅</span> جدول النشر
-  </div>
+  <div class="nav-item" onclick="showPage('dashboard')"><span class="ico">🏠</span> الداشبورد</div>
+  <div class="nav-item" onclick="showPage('growth')"><span class="ico">📈</span> تتبع النمو</div>
+  <div class="nav-item" onclick="showPage('topvideos')"><span class="ico">🏆</span> أفضل الفيديوهات</div>
+  <div class="nav-item" onclick="showPage('alerts')"><span class="ico">⚠️</span> كاشف التراجع</div>
+  <div class="nav-item" onclick="showPage('spy')"><span class="ico">🔭</span> رادار المنافسين</div>
+  <div class="nav-item" onclick="showPage('monthly')"><span class="ico">🗓️</span> الخطة الشهرية</div>
+  <div class="nav-item" onclick="showPage('schedule')"><span class="ico">📅</span> جدول النشر</div>
+  <div class="nav-item" onclick="showPage('weekly-report')"><span class="ico">📋</span> التقرير الأسبوعي</div>
+  <div class="nav-item" onclick="showPage('platform-compare')"><span class="ico">📊</span> مقارنة المنصات</div>
+  <div class="nav-item" onclick="showPage('income')"><span class="ico">💰</span> حاسبة الدخل</div>
+  <div class="nav-section">الطلاب والمحتوى</div>
+  <div class="nav-item" onclick="showPage('student-questions')"><span class="ico">🧠</span> أسئلة الطلاب</div>
+  <div class="nav-item" onclick="showPage('difficulty')"><span class="ico">🎯</span> محلل الصعوبة</div>
+  <div class="nav-item" onclick="showPage('exam-script')"><span class="ico">📝</span> سكريبت المراجعة</div>
+  <div class="nav-item" onclick="showPage('exercises')"><span class="ico">📄</span> مولد التمارين</div>
+  <div class="nav-item" onclick="showPage('hashtags')"><span class="ico">🏷️</span> مصنع الهاشتاجات</div>
+  <div class="nav-item" onclick="showPage('replies')"><span class="ico">💬</span> ردود التعليقات</div>
+  <div class="nav-section">التحسين والتوسع</div>
+  <div class="nav-item" onclick="showPage('content-map')"><span class="ico">🗺️</span> خريطة المحتوى</div>
+  <div class="nav-item" onclick="showPage('ab-test')"><span class="ico">🖼️</span> مختبر Thumbnails</div>
+  <div class="nav-item" onclick="showPage('collab')"><span class="ico">🤝</span> رادار التعاون</div>
 
   <div style="margin-top:auto"></div>
 
@@ -927,6 +927,601 @@ function showPage(id) {
   document.getElementById('page-'+id).classList.add('active');
   event.currentTarget.classList.add('active');
 }
+
+
+// ══════════════════════════════════════════════
+// WEEKLY REPORT
+// ══════════════════════════════════════════════
+async function generateWeeklyReport() {
+  const views = document.getElementById('wr-views').value;
+  const prevViews = document.getElementById('wr-prev-views').value;
+  const newF = document.getElementById('wr-new-followers').value;
+  const vids = document.getElementById('wr-videos').value;
+  const best = document.getElementById('wr-best').value;
+  const worst = document.getElementById('wr-worst').value;
+  const notes = document.getElementById('wr-notes').value;
+  setLoading('btn-weekly','weekly-output',true);
+  const growthPct = prevViews ? (((views-prevViews)/prevViews)*100).toFixed(1) : '?';
+  const prompt = `أنت مساعد تحليل محتوى. اكتب تقرير أسبوعي احترافي بالعامية المصرية لمدرس رياضيات على سوشيال ميديا.
+البيانات:
+- مشاهدات هذا الأسبوع: ${views} (الأسبوع السابق: ${prevViews}) — نمو ${growthPct}%
+- متابعين جدد: ${newF}
+- فيديوهات منشورة: ${vids}
+- أفضل فيديو: ${best}
+- أسوأ فيديو: ${worst}
+- ملاحظاتي: ${notes}
+اكتب:
+📊 ملخص الأسبوع (3 جمل)
+🏆 إنجاز الأسبوع
+⚠️ تحذير/نقطة ضعف
+🎯 توصية واحدة للأسبوع الجاي
+💪 جملة تحفيز للاستمرار`;
+  try {
+    const r = await callGemini(prompt);
+    setOutput('weekly-output', r, 'btn-weekly', '📋 ولّد التقرير');
+  } catch(e) { setOutput('weekly-output','❌ '+e.message,'btn-weekly','📋 ولّد التقرير'); }
+}
+
+async function sendWeeklyToTelegram() {
+  const text = document.getElementById('weekly-output').textContent;
+  if (!text || text.includes('أدخل')) { alert('ولّد التقرير الأول'); return; }
+  const btn = document.getElementById('btn-send-weekly');
+  btn.disabled=true; btn.textContent='⏳ جاري...';
+  await sendTelegram('📋 التقرير الأسبوعي:
+
+'+text);
+  btn.textContent='✅ تم الإرسال'; btn.disabled=false;
+  setTimeout(()=>{btn.textContent='📱 إرسال تيليجرام';},2000);
+}
+
+// ══════════════════════════════════════════════
+// PLATFORM COMPARE
+// ══════════════════════════════════════════════
+async function analyzePlatforms() {
+  setLoading('btn-pc','pc-ai',true);
+  const plats = ['yt','tt','fb','ig'];
+  const names = {yt:'يوتيوب',tt:'تيك توك',fb:'فيسبوك',ig:'إنستغرام'};
+  let data = {};
+  plats.forEach(p => {
+    data[p] = {
+      views: parseInt(document.getElementById(`pc-${p}-views`).value)||0,
+      followers: parseInt(document.getElementById(`pc-${p}-followers`).value)||0,
+      likes: parseInt(document.getElementById(`pc-${p}-likes`).value)||0,
+      comments: parseInt(document.getElementById(`pc-${p}-comments`).value)||0,
+      shares: parseInt(document.getElementById(`pc-${p}-shares`).value)||0,
+      time: parseInt(document.getElementById(`pc-${p}-time`).value)||1,
+    };
+    data[p].engRate = data[p].views > 0 ? (((data[p].likes+data[p].comments+data[p].shares)/data[p].views)*100).toFixed(2) : 0;
+    data[p].followersPerHour = data[p].time > 0 ? (data[p].followers/data[p].time).toFixed(1) : 0;
+    data[p].viewsPerHour = data[p].time > 0 ? Math.round(data[p].views/data[p].time) : 0;
+  });
+  const bestEng = plats.reduce((a,b)=>data[a].engRate>data[b].engRate?a:b);
+  const bestROI = plats.reduce((a,b)=>data[a].followersPerHour>data[b].followersPerHour?a:b);
+  const resEl = document.getElementById('pc-results');
+  resEl.classList.remove('empty');
+  resEl.textContent = plats.map(p=>`${names[p]}:
+  👁 ${data[p].views.toLocaleString('ar')} مشاهدة
+  👥 ${data[p].followers} متابع جديد
+  💚 ${data[p].engRate}% تفاعل
+  ⚡ ${data[p].followersPerHour} متابع/ساعة عمل
+  📈 ${data[p].viewsPerHour.toLocaleString('ar')} مشاهدة/ساعة`).join('
+
+') + `
+
+🏆 أعلى تفاعل: ${names[bestEng]}
+💡 أفضل ROI: ${names[bestROI]}`;
+  const str = plats.map(p=>`${names[p]}: ${data[p].views} مشاهدة، ${data[p].followers} متابع جديد، ${data[p].engRate}% تفاعل، ${data[p].time} ساعة عمل`).join(' | ');
+  const prompt = `أنت مستشار محتوى رياضيات. حلل هذه البيانات لمدرس رياضيات مصري:
+${str}
+اكتب بالعامية المصرية:
+🏆 المنصة الأفضل له وليه
+⚡ المنصة الأفضل ROI (أكتر نتيجة بأقل وقت)
+🎯 توزيع مقترح للوقت (مثال: 50% تيك توك، 30% يوتيوب...)
+🚫 منصة يخفف عليها وليه`;
+  try {
+    const r = await callGemini(prompt);
+    setOutput('pc-ai', r, 'btn-pc', '📊 حلّل وقارن');
+  } catch(e) { setOutput('pc-ai','❌ '+e.message,'btn-pc','📊 حلّل وقارن'); }
+}
+
+// ══════════════════════════════════════════════
+// INCOME CALCULATOR
+// ══════════════════════════════════════════════
+document.addEventListener('change', function(e){
+  if(e.target.id==='inc-has-course') {
+    document.getElementById('inc-course-row').style.display = e.target.value==='1' ? 'flex' : 'none';
+  }
+});
+
+async function calcIncome() {
+  const ytViews = parseInt(document.getElementById('inc-yt-views').value)||0;
+  const rpm = parseFloat(document.getElementById('inc-rpm').value)||1.5;
+  const students = parseInt(document.getElementById('inc-students').value)||0;
+  const price = parseInt(document.getElementById('inc-price').value)||0;
+  const sessions = parseInt(document.getElementById('inc-sessions').value)||0;
+  const hasCourse = document.getElementById('inc-has-course').value==='1';
+  const ytIncome = (ytViews/1000*rpm);
+  const lessonsIncome = students*price*sessions;
+  const courseRev = hasCourse ? document.getElementById('inc-course-rev').value : '0';
+  const courseNum = parseFloat(courseRev.replace(/[^0-9.]/g,''))||0;
+  const total = ytIncome + lessonsIncome + courseNum;
+  const outEl = document.getElementById('income-output');
+  outEl.classList.remove('empty');
+  outEl.textContent = `💰 تفاصيل دخلك الشهري:
+
+▶ يوتيوب (${ytViews.toLocaleString()} مشاهدة × $${rpm} RPM):
+   $${ytIncome.toFixed(0)} = ~${Math.round(ytIncome*50).toLocaleString('ar')} جنيه
+
+📚 حصص خاصة (${students} طالب × ${price}ج × ${sessions} حصة):
+   ${lessonsIncome.toLocaleString('ar')} جنيه
+${hasCourse?`
+🎓 كورسات مسجلة:
+   ~${courseNum.toLocaleString('ar')} جنيه
+`:''}
+══════════════
+💰 الإجمالي الشهري:
+   ~${Math.round(total*50+lessonsIncome).toLocaleString('ar')} جنيه`;
+  const growEl = document.getElementById('income-growth');
+  growEl.classList.remove('empty');
+  growEl.textContent = `🚀 لو ضاعفت متابعيك:
+× 2 متابعين → دخل يوتيوب: $${(ytIncome*1.8).toFixed(0)}
+× 5 متابعين → دخل يوتيوب: $${(ytIncome*4).toFixed(0)}
+
+📚 لو زدت طلابك:
+5 طلاب أضافيين → +${(5*price*sessions).toLocaleString('ar')} جنيه/شهر
+10 طلاب أضافيين → +${(10*price*sessions).toLocaleString('ar')} جنيه/شهر
+
+🎓 لو أطلقت كورس بـ 500ج:
+20 مشتري/شهر → +10,000 جنيه
+50 مشتري/شهر → +25,000 جنيه`;
+}
+
+// ══════════════════════════════════════════════
+// STUDENT QUESTIONS
+// ══════════════════════════════════════════════
+let studentQuestions = JSON.parse(localStorage.getItem('student_questions')||'[]');
+
+function addStudentQuestion() {
+  const q = document.getElementById('sq-question').value.trim();
+  const topic = document.getElementById('sq-topic').value.trim();
+  const source = document.getElementById('sq-source').value;
+  if (!q) { alert('اكتب السؤال'); return; }
+  const existing = studentQuestions.find(x => x.q.toLowerCase() === q.toLowerCase());
+  if (existing) { existing.count++; existing.sources.push(source); }
+  else studentQuestions.push({id:Date.now(),q,topic,sources:[source],count:1,date:new Date().toLocaleDateString('ar')});
+  localStorage.setItem('student_questions', JSON.stringify(studentQuestions));
+  document.getElementById('sq-question').value='';
+  document.getElementById('sq-topic').value='';
+  renderStudentQuestions();
+}
+
+async function bulkAddQuestions() {
+  const text = document.getElementById('sq-bulk').value.trim();
+  if (!text) return;
+  setLoading('btn-sq-analyze','sq-ai-output',true);
+  const prompt = `استخرج كل الأسئلة الرياضية من هذه التعليقات. أعد قائمة JSON فقط:
+[{"q":"السؤال","topic":"الموضوع"}]
+التعليقات:
+${text}`;
+  try {
+    const r = await callGemini(prompt);
+    const clean = r.replace(/```json|```/g,'').trim();
+    const arr = JSON.parse(clean);
+    arr.forEach(item => {
+      if(item.q) studentQuestions.push({id:Date.now()+Math.random(),q:item.q,topic:item.topic||'عام',sources:['تعليقات'],count:1,date:new Date().toLocaleDateString('ar')});
+    });
+    localStorage.setItem('student_questions', JSON.stringify(studentQuestions));
+    document.getElementById('sq-bulk').value='';
+    renderStudentQuestions();
+    document.getElementById('btn-sq-analyze').disabled=false;
+    document.getElementById('btn-sq-analyze').textContent='🤖 تحليل Gemini';
+  } catch(e) {
+    setOutput('sq-ai-output','❌ '+e.message,'btn-sq-analyze','🤖 تحليل Gemini');
+  }
+}
+
+function renderStudentQuestions() {
+  const sorted = [...studentQuestions].sort((a,b)=>b.count-a.count);
+  const el = document.getElementById('sq-list');
+  if (!sorted.length) { el.innerHTML='<div class="alert info">لا توجد أسئلة بعد</div>'; return; }
+  el.innerHTML = sorted.slice(0,30).map(q=>`
+    <div class="script-card" style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px">${q.q}</div>
+        <div style="font-size:11px;color:var(--mut)">${q.topic||'عام'} · ${q.date}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <span style="background:var(--acc)22;color:var(--acc);font-size:12px;font-weight:700;padding:3px 8px;border-radius:20px">×${q.count}</span>
+        <button onclick="removeQuestion(${q.id})" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:14px">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function removeQuestion(id) {
+  studentQuestions = studentQuestions.filter(q=>q.id!==id);
+  localStorage.setItem('student_questions',JSON.stringify(studentQuestions));
+  renderStudentQuestions();
+}
+
+async function analyzeStudentQuestions() {
+  if (!studentQuestions.length) { alert('أضف أسئلة الأول'); return; }
+  setLoading('btn-sq-analyze','sq-ai-output',true);
+  const sorted = [...studentQuestions].sort((a,b)=>b.count-a.count).slice(0,20);
+  const str = sorted.map(q=>`"${q.q}" (${q.topic}) — تكررت ${q.count} مرة`).join('
+');
+  const prompt = `أنت مستشار محتوى لمدرس رياضيات. حلّل أسئلة الطلاب:
+${str}
+اكتب بالعامية المصرية:
+🎬 أولوية الفيديوهات: أهم 5 فيديوهات لازم تعملها فوراً مع عنوان كل واحد
+🧩 الأنماط: إيه المواضيع اللي فيها فجوات في فهم الطلاب؟
+💡 فكرة سيريز: إزاي تحول الأسئلة دي لسلسلة فيديوهات متكاملة`;
+  try {
+    const r = await callGemini(prompt);
+    setOutput('sq-ai-output',r,'btn-sq-analyze','🤖 تحليل Gemini');
+  } catch(e) { setOutput('sq-ai-output','❌ '+e.message,'btn-sq-analyze','🤖 تحليل Gemini'); }
+}
+
+// ══════════════════════════════════════════════
+// DIFFICULTY ANALYZER
+// ══════════════════════════════════════════════
+function addDiffRow() {
+  const row = document.createElement('div');
+  row.className='diff-row';
+  row.style='display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px';
+  row.innerHTML=`<div class="form-row"><input type="text" placeholder="الموضوع"></div><div class="form-row"><input type="text" placeholder="مشاهدات"></div><div class="form-row"><input type="text" placeholder="تعليقات صعبة"></div><div class="form-row"><input type="text" placeholder="retention %"></div><button class="btn btn-ghost" onclick="this.closest('.diff-row').remove()" style="height:38px;padding:0 12px">✕</button>`;
+  document.getElementById('diff-rows').appendChild(row);
+}
+
+async function analyzeDifficulty() {
+  const rows = document.querySelectorAll('.diff-row');
+  const topics = [];
+  rows.forEach(r=>{
+    const ins = r.querySelectorAll('input');
+    if(ins[0].value) topics.push({topic:ins[0].value,views:ins[1].value||0,hardComments:ins[2].value||0,retention:ins[3].value||0});
+  });
+  if(topics.length<2){alert('أضف موضوعين على الأقل');return;}
+  setLoading('btn-diff','diff-output',true);
+  const str = topics.map(t=>`"${t.topic}": ${t.views} مشاهدة، ${t.hardComments} تعليق "مش فاهم"، retention ${t.retention}%`).join('
+');
+  const prompt = `أنت محلل تعليمي. حلّل صعوبة هذه المواضيع:
+${str}
+اكتب بالعامية المصرية:
+🔴 المواضيع الأكتر صعوبة (بالترتيب) مع سبب الصعوبة
+🟡 المواضيع المتوسطة
+🟢 المواضيع السهلة على الطلاب
+📚 خطة معالجة: إزاي تشرح المواضيع الصعبة بطريقة مختلفة
+🎬 أقترح أسلوب شرح مختلف لكل موضوع صعب`;
+  try {
+    const r = await callGemini(prompt);
+    setOutput('diff-output',r,'btn-diff','🎯 حلّل الصعوبة');
+  } catch(e){setOutput('diff-output','❌ '+e.message,'btn-diff','🎯 حلّل الصعوبة');}
+}
+
+// ══════════════════════════════════════════════
+// EXAM SCRIPT
+// ══════════════════════════════════════════════
+async function generateExamScript() {
+  const subject = document.getElementById('ex-subject').value.trim();
+  if(!subject){alert('اكتب اسم المادة');return;}
+  setLoading('btn-exam','exam-output',true);
+  const level = document.getElementById('ex-level').value;
+  const dur = document.getElementById('ex-duration').value;
+  const points = document.getElementById('ex-points').value;
+  const expected = document.getElementById('ex-expected').value;
+  const prompt = `أنت كاتب سكريبتات رياضيات محترف. اكتب سكريبت مراجعة سريعة قبل الامتحان.
+المادة: ${subject} | المرحلة: ${level} | المدة: ${dur}
+أهم النقاط: ${points}
+الأسئلة المتوقعة: ${expected||'لم تحدد'}
+الهيكل:
+⚡ [0-10ث] Hook: "امتحانك بكرة؟ في ${dur} هتعرف كل اللي محتاجه!"
+📌 [حسب المدة] راجع كل نقطة في 60-90 ثانية: القانون + مثال سريع + الخطأ الشائع
+🎯 [آخر 30ث] CTA: "حل ورقة الأسئلة في التعليقات"
+اكتب بالعامية المصرية مع إشارات المونتاج [زوم]، [اكتب على الشاشة]، [سريع].`;
+  try{const r=await callGemini(prompt);setOutput('exam-output',r,'btn-exam','📝 ولّد السكريبت');}
+  catch(e){setOutput('exam-output','❌ '+e.message,'btn-exam','📝 ولّد السكريبت');}
+}
+
+// ══════════════════════════════════════════════
+// EXERCISES GENERATOR
+// ══════════════════════════════════════════════
+async function generateExercises() {
+  const topic = document.getElementById('ex2-topic').value.trim();
+  if(!topic){alert('اكتب الموضوع');return;}
+  setLoading('btn-ex2','exercises-output',true);
+  const level = document.getElementById('ex2-level').value;
+  const count = document.getElementById('ex2-count').value;
+  const types = document.getElementById('ex2-types').value;
+  const solutions = document.getElementById('ex2-solutions').value;
+  const extra = document.getElementById('ex2-extra').value;
+  const solutionInstr = solutions==='yes'?'أضف الحل الكامل بعد كل سؤال':solutions==='hints'?'أضف تلميح واحد بعد كل سؤال':'لا تضع حلول';
+  const prompt = `أنت مدرس رياضيات محترف. اكتب ورقة تمارين احترافية كاملة.
+الموضوع: ${topic} | المستوى: ${level} | عدد الأسئلة: ${count} | النوع: ${types}
+${solutionInstr}
+${extra?'تعليمات: '+extra:''}
+الشكل:
+═══════════════════════════════
+ورقة تمارين: ${topic}
+المستوى: ${level} | العدد: ${count} سؤال
+═══════════════════════════════
+[الأسئلة مرقمة بوضوح مع مسافة كافية للحل]
+${solutions!=='no'?'[الحلول أو التلميحات بعد كل سؤال مفصولة بخط]':''}
+اكتب باللغة العربية الفصحى للأسئلة العلمية.`;
+  try{const r=await callGemini(prompt);setOutput('exercises-output',r,'btn-ex2','📄 ولّد الورقة');}
+  catch(e){setOutput('exercises-output','❌ '+e.message,'btn-ex2','📄 ولّد الورقة');}
+}
+
+function printExercises() {
+  const content = document.getElementById('exercises-output').textContent;
+  if(!content||content.includes('اضبط')){alert('ولّد الورقة الأول');return;}
+  const w = window.open('','_blank');
+  w.document.write(`<html dir="rtl"><head><title>ورقة تمارين</title><style>body{font-family:Arial;font-size:14px;line-height:1.8;padding:20px;direction:rtl}pre{white-space:pre-wrap;font-family:Arial}</style></head><body><pre>${content}</pre></body></html>`);
+  w.document.close(); w.print();
+}
+
+// ══════════════════════════════════════════════
+// HASHTAGS
+// ══════════════════════════════════════════════
+async function generateHashtags() {
+  const topic = document.getElementById('ht-topic').value.trim();
+  if(!topic){alert('اكتب الموضوع');return;}
+  setLoading('btn-ht','ht-output',true);
+  const platform = document.getElementById('ht-platform').value;
+  const lang = document.getElementById('ht-lang').value;
+  const langStr = lang==='ar'?'عربية فقط':lang==='en'?'إنجليزية فقط':'عربية وإنجليزية مختلطة';
+  const platInstr = platform==='all'?`اعمل قائمة منفصلة لكل منصة:
+يوتيوب: 10-15 هاشتاج (مزيج عام + متخصص)
+تيك توك: 5-8 هاشتاجات فايرل قصيرة
+إنستغرام: 20-30 هاشتاج (عام + متخصص + ترند)
+فيسبوك: 3-5 هاشتاجات بس`:
+  `اعمل ${platform==='youtube'?'10-15':platform==='tiktok'?'5-8':platform==='instagram'?'20-30':'3-5'} هاشتاج`;
+  const prompt = `أنت خبير سوشيال ميديا رياضيات. ولّد هاشتاجات للموضوع: "${topic}"
+اللغة: ${langStr}
+${platInstr}
+رتب الهاشتاجات من الأقوى للأضعف. اكتبها جاهزة للنسخ.`;
+  try{const r=await callGemini(prompt);setOutput('ht-output',r,'btn-ht','🏷️ ولّد الهاشتاجات');}
+  catch(e){setOutput('ht-output','❌ '+e.message,'btn-ht','🏷️ ولّد الهاشتاجات');}
+}
+
+// ══════════════════════════════════════════════
+// COMMENT REPLIES
+// ══════════════════════════════════════════════
+async function generateReply() {
+  const comment = document.getElementById('rep-comment').value.trim();
+  if(!comment){alert('الصق التعليق الأول');return;}
+  setLoading('btn-rep','rep-output',true);
+  const type = document.getElementById('rep-type').value;
+  const platform = document.getElementById('rep-platform').value;
+  const count = document.getElementById('rep-count').value;
+  const prompt = `أنت "نيوتن الرياضيات" — أقوى مدرس رياضيات على سوشيال ميديا في مصر.
+التعليق: "${comment}"
+النوع: ${type} | المنصة: ${platform}
+اكتب ${count} رد${count>1?' مختلف تماماً في الأسلوب':''} بالعامية المصرية.
+الشروط:
+- الرد يعكس كاريزما ومحبة حقيقية للطلاب
+- ${type.includes('سؤال')?'شرح مختصر مفيد + دعوة لمشاهدة فيديو أو قادم':''}
+- ${type.includes('مدح')?'شكر حار + تشجيع على الاستمرار + دعوة للشير':''}
+- ${type.includes('انتقاد')?'رد محترف إيجابي يحول الانتقاد لفرصة':''}
+- ${type.includes('تحدي')?'رد بثقة وذكاء يعزز مكانتك':''}
+- ${type.includes('حصص')?'رد يشجع التواصل بشكل طبيعي مش بيع مباشر':''}
+${count>1?'افصل بين الردود بـ ---':''}`;
+  try{const r=await callGemini(prompt);setOutput('rep-output',r,'btn-rep','💬 ولّد الردود');}
+  catch(e){setOutput('rep-output','❌ '+e.message,'btn-rep','💬 ولّد الردود');}
+}
+
+// ══════════════════════════════════════════════
+// CONTENT MAP
+// ══════════════════════════════════════════════
+let contentMap = JSON.parse(localStorage.getItem('content_map')||'[]');
+
+function addContentMapItem() {
+  const topic = document.getElementById('cmap-topic').value.trim();
+  const status = document.getElementById('cmap-status').value;
+  const views = document.getElementById('cmap-views').value;
+  if(!topic){alert('اكتب الموضوع');return;}
+  contentMap.push({id:Date.now(),topic,status,views:parseInt(views)||0});
+  localStorage.setItem('content_map',JSON.stringify(contentMap));
+  document.getElementById('cmap-topic').value='';
+  document.getElementById('cmap-views').value='';
+  renderContentMap();
+}
+
+function bulkAddTopics() {
+  const text = document.getElementById('cmap-bulk').value.trim();
+  if(!text)return;
+  text.split('
+').forEach(line=>{
+    const t = line.trim();
+    if(t) contentMap.push({id:Date.now()+Math.random(),topic:t,status:'done',views:0});
+  });
+  localStorage.setItem('content_map',JSON.stringify(contentMap));
+  document.getElementById('cmap-bulk').value='';
+  renderContentMap();
+}
+
+function renderContentMap() {
+  const el = document.getElementById('cmap-list');
+  if(!contentMap.length){el.innerHTML='<div class="alert info">أضف مواضيعك للبدء</div>';return;}
+  const icons = {done:'✅',partial:'🔶',planned:'📌'};
+  const labels = {done:'مغطى',partial:'جزئي',planned:'مخطط'};
+  el.innerHTML = contentMap.map(item=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--s2);border-radius:8px;gap:8px">
+      <span style="font-size:13px">${icons[item.status]} ${item.topic}</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        ${item.views?`<span style="font-size:11px;color:var(--mut)">${item.views.toLocaleString('ar')} 👁</span>`:''}
+        <span style="font-size:10px;color:var(--mut)">${labels[item.status]}</span>
+        <button onclick="contentMap=contentMap.filter(x=>x.id!=${item.id});localStorage.setItem('content_map',JSON.stringify(contentMap));renderContentMap()" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+async function analyzeContentMap() {
+  if(!contentMap.length){alert('أضف مواضيعك الأول');return;}
+  setLoading('btn-cmap','cmap-ai',true);
+  const done = contentMap.filter(x=>x.status==='done').map(x=>x.topic);
+  const partial = contentMap.filter(x=>x.status==='partial').map(x=>x.topic);
+  const planned = contentMap.filter(x=>x.status==='planned').map(x=>x.topic);
+  const prompt = `أنت مخطط محتوى رياضيات. حلّل خريطة المحتوى:
+مغطى: ${done.join('، ')||'لا شيء'}
+جزئي: ${partial.join('، ')||'لا شيء'}
+مخطط: ${planned.join('، ')||'لا شيء'}
+اكتب بالعامية المصرية:
+🗺️ الفجوات: مواضيع مهمة في الرياضيات مش موجودة خالص عند المدرس ده
+⭐ أهم 5 فيديوهات لازم يعملها دلوقتي بالترتيب
+🔄 المواضيع الجزئية: إيه الجزء الناقص في كل واحدة
+💡 فكرة سيريز: إزاي يربط مواضيعه في سلسلة متكاملة`;
+  try{const r=await callGemini(prompt);setOutput('cmap-ai',r,'btn-cmap','🤖 تحليل وكشف الفجوات');}
+  catch(e){setOutput('cmap-ai','❌ '+e.message,'btn-cmap','🤖 تحليل وكشف الفجوات');}
+}
+
+// ══════════════════════════════════════════════
+// AB TEST
+// ══════════════════════════════════════════════
+let abTests = JSON.parse(localStorage.getItem('ab_tests')||'[]');
+
+function addABTest() {
+  const title = document.getElementById('ab-title').value.trim();
+  const a = document.getElementById('ab-a').value.trim();
+  const b = document.getElementById('ab-b').value.trim();
+  if(!title||!a||!b){alert('أدخل كل البيانات');return;}
+  abTests.push({id:Date.now(),title,a,b,ctrA:null,ctrB:null,viewsA:null,viewsB:null,winner:null,date:new Date().toLocaleDateString('ar')});
+  localStorage.setItem('ab_tests',JSON.stringify(abTests));
+  ['ab-title','ab-a','ab-b'].forEach(id=>document.getElementById(id).value='');
+  renderABTests();
+}
+
+function renderABTests() {
+  const el = document.getElementById('ab-list');
+  const aiCard = document.getElementById('ab-ai-card');
+  if(!abTests.length){el.innerHTML='<div class="alert info">أضف اختبارات Thumbnail للبدء</div>';aiCard.style.display='none';return;}
+  aiCard.style.display='block';
+  el.innerHTML = abTests.map(t=>`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-weight:700;font-size:14px">${t.title}</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;color:var(--mut)">${t.date}</span>
+          <button onclick="removeABTest(${t.id})" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid ${t.winner==='A'?'var(--acc3)':'var(--b2)'}">
+          <div style="font-size:12px;font-weight:700;color:var(--acc);margin-bottom:6px">🅰️ Thumbnail A</div>
+          <div style="font-size:12px;margin-bottom:8px">${t.a}</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" placeholder="مشاهدات" id="ab-a-views-${t.id}" value="${t.viewsA||''}" style="width:80px;padding:4px 6px;font-size:11px">
+            <input type="text" placeholder="CTR %" id="ab-a-ctr-${t.id}" value="${t.ctrA||''}" style="width:70px;padding:4px 6px;font-size:11px">
+          </div>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid ${t.winner==='B'?'var(--acc3)':'var(--b2)'}">
+          <div style="font-size:12px;font-weight:700;color:var(--acc2);margin-bottom:6px">🅱️ Thumbnail B</div>
+          <div style="font-size:12px;margin-bottom:8px">${t.b}</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" placeholder="مشاهدات" id="ab-b-views-${t.id}" value="${t.viewsB||''}" style="width:80px;padding:4px 6px;font-size:11px">
+            <input type="text" placeholder="CTR %" id="ab-b-ctr-${t.id}" value="${t.ctrB||''}" style="width:70px;padding:4px 6px;font-size:11px">
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="saveABResult(${t.id})" style="font-size:12px">💾 حفظ النتائج</button>
+        ${t.winner?`<span style="font-size:12px;color:var(--acc3);padding:6px 10px;background:var(--acc3)18;border-radius:8px">🏆 الفائز: Thumbnail ${t.winner}</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function saveABResult(id) {
+  const t = abTests.find(x=>x.id===id);
+  if(!t)return;
+  t.viewsA = parseInt(document.getElementById(`ab-a-views-${id}`)?.value)||null;
+  t.viewsB = parseInt(document.getElementById(`ab-b-views-${id}`)?.value)||null;
+  t.ctrA = parseFloat(document.getElementById(`ab-a-ctr-${id}`)?.value)||null;
+  t.ctrB = parseFloat(document.getElementById(`ab-b-ctr-${id}`)?.value)||null;
+  if(t.ctrA && t.ctrB) t.winner = t.ctrA >= t.ctrB ? 'A' : 'B';
+  else if(t.viewsA && t.viewsB) t.winner = t.viewsA >= t.viewsB ? 'A' : 'B';
+  localStorage.setItem('ab_tests',JSON.stringify(abTests));
+  renderABTests();
+}
+
+function removeABTest(id){abTests=abTests.filter(x=>x.id!==id);localStorage.setItem('ab_tests',JSON.stringify(abTests));renderABTests();}
+
+async function analyzeAB() {
+  const withResults = abTests.filter(t=>t.winner);
+  if(!withResults.length){alert('سجّل نتائج اختبارات الأول');return;}
+  setLoading('btn-ab-analyze','ab-ai',true);
+  const str = withResults.map(t=>`الفيديو: "${t.title}" | A: "${t.a}" (CTR: ${t.ctrA}%) | B: "${t.b}" (CTR: ${t.ctrB}%) | الفائز: ${t.winner}`).join('
+');
+  const prompt = `حلّل نتائج A/B Testing للـ Thumbnails:
+${str}
+اكتب بالعامية المصرية:
+🎨 الأنماط: إيه اللي بيخلي الـ Thumbnail ينجح (ألوان؟ وجه؟ نص؟ أرقام؟)
+🏆 قواعد الـ Thumbnail الناجح لقناتك
+💡 توصيات للـ Thumbnails الجاية`;
+  try{const r=await callGemini(prompt);setOutput('ab-ai',r,'btn-ab-analyze','🔍 حلّل النتائج');}
+  catch(e){setOutput('ab-ai','❌ '+e.message,'btn-ab-analyze','🔍 حلّل النتائج');}
+}
+
+// ══════════════════════════════════════════════
+// COLLAB RADAR
+// ══════════════════════════════════════════════
+let collabChannels = JSON.parse(localStorage.getItem('collab_channels')||'[]');
+
+function addCollabChannel() {
+  const name = document.getElementById('col-ch-name').value.trim();
+  const subs = document.getElementById('col-ch-subs').value;
+  const type = document.getElementById('col-ch-type').value.trim();
+  const audience = document.getElementById('col-ch-audience').value.trim();
+  if(!name){alert('أدخل اسم القناة');return;}
+  collabChannels.push({id:Date.now(),name,subs:parseInt(subs)||0,type,audience});
+  localStorage.setItem('collab_channels',JSON.stringify(collabChannels));
+  ['col-ch-name','col-ch-subs','col-ch-type','col-ch-audience'].forEach(id=>document.getElementById(id).value='');
+  renderCollabList();
+}
+
+function renderCollabList() {
+  const el = document.getElementById('collab-list');
+  const aiCard = document.getElementById('collab-ai-card');
+  if(!collabChannels.length){el.innerHTML='<div class="alert info">أضف قنوات محتملة للتحليل</div>';if(aiCard)aiCard.style.display='none';return;}
+  if(aiCard)aiCard.style.display='block';
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">${collabChannels.map(ch=>`
+    <div class="script-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-weight:700;font-size:13px">📺 ${ch.name}</div>
+        <div style="font-size:11px;color:var(--mut)">${ch.type} · ${ch.audience} · ${(ch.subs/1000).toFixed(1)}K مشترك</div>
+      </div>
+      <button onclick="collabChannels=collabChannels.filter(x=>x.id!=${ch.id});localStorage.setItem('collab_channels',JSON.stringify(collabChannels));renderCollabList()" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button>
+    </div>`).join('')}</div>`;
+}
+
+async function analyzeCollab() {
+  if(!collabChannels.length){alert('أضف قنوات الأول');return;}
+  setLoading('btn-collab','collab-ai',true);
+  const mySubs = document.getElementById('col-my-subs').value;
+  const myViews = document.getElementById('col-my-views').value;
+  const myAudience = document.getElementById('col-my-audience').value;
+  const myStyle = document.getElementById('col-my-style').value;
+  const str = collabChannels.map(ch=>`${ch.name} (${(ch.subs/1000).toFixed(1)}K مشترك) | ${ch.type} | جمهور: ${ch.audience}`).join('
+');
+  const prompt = `أنت مستشار نمو. حلّل فرص التعاون لمدرس رياضيات مصري:
+بياناتي: ${mySubs} متابع، ${myViews} مشاهدة/شهر، جمهوري: ${myAudience}، أسلوبي: ${myStyle}
+القنوات المحتملة:
+${str}
+اكتب بالعامية المصرية:
+🤝 ترتيب القنوات من الأفضل للأقل ملاءمة للتعاون مع سبب كل واحدة
+💡 فكرة تعاون مناسبة لكل قناة (Collab idea)
+📈 متوقع تكسب كام متابع من كل تعاون؟
+⚠️ قنوات ينصح بعدم التعاون معها وليه`;
+  try{const r=await callGemini(prompt);setOutput('collab-ai',r,'btn-collab','🤝 حلّل فرص التعاون');}
+  catch(e){setOutput('collab-ai','❌ '+e.message,'btn-collab','🤝 حلّل فرص التعاون');}
+}
+
+// ══════════════════════════════════════════════
+// INIT NEW FEATURES
+// ══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  renderStudentQuestions();
+  renderContentMap();
+  renderABTests();
+  renderCollabList();
+});
 
 // ═══ NEWTON PERSONALITY ═══
 const DEFAULT_PERSONA = `أنت المساعد السري لـ "نيوتن الرياضيات" — صانع المحتوى التعليمي الأقوى في مصر.
@@ -2233,6 +2828,462 @@ document.addEventListener('DOMContentLoaded', function() {
     <div id="plan-output" class="output-box empty">اضبط الإعدادات وولّد الخطة</div>
     <div style="margin-top:10px;display:flex;gap:8px">
       <button class="btn btn-ghost" onclick="copyOutput('plan-output')">📋 نسخ الخطة</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ WEEKLY REPORT ═══ -->
+<section class="page" id="page-weekly-report">
+  <div class="page-header">
+    <div class="page-title">📋 التقرير الأسبوعي التلقائي<div class="sub">ملخص أداؤك كل أسبوع — يتبعتلك على تيليجرام</div></div>
+    <button class="btn btn-acc" onclick="generateWeeklyReport()" id="btn-weekly">📋 ولّد التقرير</button>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">📥 بيانات الأسبوع</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="form-grid">
+          <div class="form-row"><label>مشاهدات هذا الأسبوع</label><input type="text" id="wr-views" placeholder="80000"></div>
+          <div class="form-row"><label>مشاهدات الأسبوع السابق</label><input type="text" id="wr-prev-views" placeholder="65000"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-row"><label>متابعين جدد</label><input type="text" id="wr-new-followers" placeholder="500"></div>
+          <div class="form-row"><label>فيديوهات نُشرت</label><input type="text" id="wr-videos" placeholder="4"></div>
+        </div>
+        <div class="form-row"><label>أفضل فيديو هذا الأسبوع</label><input type="text" id="wr-best" placeholder="عنوان الفيديو الأكتر مشاهدة"></div>
+        <div class="form-row"><label>أسوأ فيديو هذا الأسبوع</label><input type="text" id="wr-worst" placeholder="عنوان الفيديو الأقل أداء"></div>
+        <div class="form-row"><label>ملاحظاتك الشخصية</label><textarea id="wr-notes" placeholder="حسيت إيه الأسبوع ده؟ إيه اللي مكنتش راضي عنه؟"></textarea></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 التقرير المُولَّد</div>
+      <div id="weekly-output" class="output-box empty">أدخل البيانات وولّد التقرير</div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="copyOutput('weekly-output')">📋 نسخ</button>
+        <button class="btn btn-ghost" onclick="sendWeeklyToTelegram()" id="btn-send-weekly">📱 إرسال تيليجرام</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PLATFORM COMPARE ═══ -->
+<section class="page" id="page-platform-compare">
+  <div class="page-header">
+    <div class="page-title">📊 مقارنة أداء المنصات<div class="sub">أي منصة بتديك أكتر بأقل جهد؟</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📥 أدخل بيانات كل منصة (آخر شهر)</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:600px">
+        <tr style="font-size:11px;color:var(--mut)">
+          <th style="text-align:right;padding:8px;font-weight:700">المنصة</th>
+          <th style="padding:8px;font-weight:700">مشاهدات/وصول</th>
+          <th style="padding:8px;font-weight:700">متابعين جدد</th>
+          <th style="padding:8px;font-weight:700">لايكات إجمالية</th>
+          <th style="padding:8px;font-weight:700">تعليقات</th>
+          <th style="padding:8px;font-weight:700">شيرات</th>
+          <th style="padding:8px;font-weight:700">وقت إنتاج (ساعة)</th>
+        </tr>
+        <tr style="border-top:1px solid var(--b2)">
+          <td style="padding:8px;font-weight:700"><span class="plat yt">▶ يوتيوب</span></td>
+          <td style="padding:4px"><input type="text" id="pc-yt-views" placeholder="200000" style="width:90px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-yt-followers" placeholder="800" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-yt-likes" placeholder="5000" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-yt-comments" placeholder="400" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-yt-shares" placeholder="200" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-yt-time" placeholder="20" style="width:70px;padding:5px 8px"></td>
+        </tr>
+        <tr style="border-top:1px solid var(--b2)">
+          <td style="padding:8px;font-weight:700"><span class="plat tt">♪ تيك توك</span></td>
+          <td style="padding:4px"><input type="text" id="pc-tt-views" placeholder="500000" style="width:90px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-tt-followers" placeholder="1200" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-tt-likes" placeholder="15000" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-tt-comments" placeholder="800" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-tt-shares" placeholder="2000" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-tt-time" placeholder="8" style="width:70px;padding:5px 8px"></td>
+        </tr>
+        <tr style="border-top:1px solid var(--b2)">
+          <td style="padding:8px;font-weight:700"><span class="plat fb">f فيسبوك</span></td>
+          <td style="padding:4px"><input type="text" id="pc-fb-views" placeholder="80000" style="width:90px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-fb-followers" placeholder="300" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-fb-likes" placeholder="2000" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-fb-comments" placeholder="600" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-fb-shares" placeholder="500" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-fb-time" placeholder="5" style="width:70px;padding:5px 8px"></td>
+        </tr>
+        <tr style="border-top:1px solid var(--b2)">
+          <td style="padding:8px;font-weight:700"><span class="plat ig">📷 إنستغرام</span></td>
+          <td style="padding:4px"><input type="text" id="pc-ig-views" placeholder="120000" style="width:90px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-ig-followers" placeholder="400" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-ig-likes" placeholder="8000" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-ig-comments" placeholder="300" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-ig-shares" placeholder="800" style="width:80px;padding:5px 8px"></td>
+          <td style="padding:4px"><input type="text" id="pc-ig-time" placeholder="6" style="width:70px;padding:5px 8px"></td>
+        </tr>
+      </table>
+    </div>
+    <button class="btn btn-acc" onclick="analyzePlatforms()" id="btn-pc" style="margin-top:14px">📊 حلّل وقارن</button>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">🏆 نتائج المقارنة</div>
+      <div id="pc-results" class="output-box empty">أدخل البيانات للمقارنة</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🤖 توصية Gemini</div>
+      <div id="pc-ai" class="output-box empty">—</div>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('pc-ai')">📋 نسخ</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ INCOME CALCULATOR ═══ -->
+<section class="page" id="page-income">
+  <div class="page-header">
+    <div class="page-title">💰 حاسبة دخل المحتوى<div class="sub">كام بتكسب دلوقتي وكام ممكن تكسب؟</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">📥 بياناتك الحالية</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="form-row"><label>متوسط مشاهدات يوتيوب الشهري</label><input type="text" id="inc-yt-views" placeholder="200000"></div>
+        <div class="form-row"><label>RPM (دخل لكل 1000 مشاهدة $)</label><input type="text" id="inc-rpm" placeholder="1.5" value="1.5"></div>
+        <div class="form-row"><label>عدد الطلاب في حصص خاصة</label><input type="text" id="inc-students" placeholder="10"></div>
+        <div class="form-row"><label>سعر الحصة (جنيه)</label><input type="text" id="inc-price" placeholder="200"></div>
+        <div class="form-row"><label>عدد حصصك الشهرية للطالب الواحد</label><input type="text" id="inc-sessions" placeholder="8"></div>
+        <div class="form-row"><label>كورس مسجل (لو عندك)</label>
+          <select id="inc-has-course">
+            <option value="0">لا يوجد</option>
+            <option value="1">موجود</option>
+          </select>
+        </div>
+        <div class="form-row" id="inc-course-row" style="display:none"><label>سعر الكورس × عدد المبيعات الشهرية</label><input type="text" id="inc-course-rev" placeholder="500 × 20"></div>
+        <button class="btn btn-acc" onclick="calcIncome()" style="width:100%">💰 احسب دخلك</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">💰 تفاصيل الدخل</div>
+      <div id="income-output" class="output-box empty">أدخل بياناتك واحسب</div>
+      <div style="margin-top:12px">
+        <div class="card-title" style="margin-top:8px">🚀 إمكانات النمو</div>
+        <div id="income-growth" class="output-box empty" style="margin-top:8px">—</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ STUDENT QUESTIONS ═══ -->
+<section class="page" id="page-student-questions">
+  <div class="page-header">
+    <div class="page-title">🧠 تتبع أسئلة الطلاب<div class="sub">كل سؤال بيتكرر = فيديو لازم تعمله</div></div>
+    <button class="btn btn-acc" onclick="analyzeStudentQuestions()" id="btn-sq-analyze">🤖 تحليل Gemini</button>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">➕ أضف سؤال</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="form-row"><label>السؤال</label><textarea id="sq-question" placeholder="مثال: إيه الفرق بين المشتقة والتكامل؟" style="min-height:70px"></textarea></div>
+        <div class="form-grid">
+          <div class="form-row"><label>المصدر</label>
+            <select id="sq-source">
+              <option>تعليق يوتيوب</option><option>تعليق تيك توك</option><option>تعليق فيسبوك</option><option>واتساب</option><option>مباشر من طالب</option>
+            </select>
+          </div>
+          <div class="form-row"><label>الموضوع</label><input type="text" id="sq-topic" placeholder="مثال: مشتقات"></div>
+        </div>
+        <button class="btn btn-acc" onclick="addStudentQuestion()">➕ أضف السؤال</button>
+      </div>
+      <div class="divider" style="margin:14px 0"></div>
+      <div class="card-title">📥 أو الصق تعليقات كتير دفعة واحدة</div>
+      <textarea id="sq-bulk" placeholder="الصق تعليقات كتير هنا..." style="min-height:80px;margin-top:8px"></textarea>
+      <button class="btn btn-ghost" onclick="bulkAddQuestions()" style="margin-top:8px;width:100%">📥 استخرج الأسئلة تلقائي</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 أكتر الأسئلة تكراراً</div>
+      <div id="sq-list" style="display:flex;flex-direction:column;gap:6px">
+        <div class="alert info">أضف أسئلة للبدء</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">🤖 تحليل Gemini — أولويات الفيديوهات</div>
+    <div id="sq-ai-output" class="output-box empty">اضغط "تحليل Gemini" بعد إضافة أسئلة</div>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('sq-ai-output')">📋 نسخ</button>
+  </div>
+</section>
+
+<!-- ═══ DIFFICULTY ANALYZER ═══ -->
+<section class="page" id="page-difficulty">
+  <div class="page-header">
+    <div class="page-title">🎯 محلل صعوبة المواضيع<div class="sub">أي المواضيع طلابك بيصعب عليهم أكتر؟</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📥 أدخل بيانات مواضيعك</div>
+    <div class="alert info" style="margin-bottom:12px">كل ما زادت التعليقات السلبية وقلت المشاهدات = الموضوع صعب — Gemini بيحدد الأولويات</div>
+    <div id="diff-rows">
+      <div class="diff-row" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px">
+        <div class="form-row"><label>الموضوع</label><input type="text" placeholder="مثال: التكامل بالتعويض"></div>
+        <div class="form-row"><label>مشاهدات الفيديو</label><input type="text" placeholder="30000"></div>
+        <div class="form-row"><label>تعليقات "مش فاهم"</label><input type="text" placeholder="150"></div>
+        <div class="form-row"><label>retention %</label><input type="text" placeholder="35"></div>
+        <button class="btn btn-ghost" onclick="this.closest('.diff-row').remove()" style="height:38px;padding:0 12px">✕</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="addDiffRow()">+ موضوع</button>
+      <button class="btn btn-acc" onclick="analyzeDifficulty()" id="btn-diff">🎯 حلّل الصعوبة</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">🎯 خريطة الصعوبة</div>
+    <div id="diff-output" class="output-box empty">أدخل بيانات المواضيع للتحليل</div>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('diff-output')">📋 نسخ</button>
+  </div>
+</section>
+
+<!-- ═══ EXAM SCRIPT ═══ -->
+<section class="page" id="page-exam-script">
+  <div class="page-header">
+    <div class="page-title">📝 مولد سكريبت المراجعة السريعة<div class="sub">قبل الامتحانات — المحتوى الأكتر مشاهدة في السنة</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">⚙️ إعدادات المراجعة</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="form-row"><label>المادة / الوحدة</label><input type="text" id="ex-subject" placeholder="مثال: حساب التفاضل والتكامل"></div>
+        <div class="form-row"><label>المرحلة</label>
+          <select id="ex-level"><option>إعدادي</option><option selected>ثانوي عام</option><option>أزهر</option><option>جامعي</option></select>
+        </div>
+        <div class="form-row"><label>المدة المستهدفة</label>
+          <select id="ex-duration"><option>5 دقائق</option><option selected>10 دقائق</option><option>15 دقيقة</option><option>20 دقيقة</option></select>
+        </div>
+        <div class="form-row"><label>أهم 5 نقاط للمراجعة</label><textarea id="ex-points" placeholder="1. المشتقات الأساسية&#10;2. قاعدة السلسلة&#10;3. التكامل المحدد&#10;4. نظرية القيمة المتوسطة&#10;5. النهايات" style="min-height:100px"></textarea></div>
+        <div class="form-row"><label>الأسئلة المتوقعة في الامتحان</label><textarea id="ex-expected" placeholder="اكتب أنواع الأسئلة المتوقعة..."></textarea></div>
+        <button class="btn btn-acc" onclick="generateExamScript()" id="btn-exam" style="width:100%">📝 ولّد السكريبت</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📝 سكريبت المراجعة</div>
+      <div id="exam-output" class="output-box empty">اضبط الإعدادات وولّد السكريبت</div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="copyOutput('exam-output')">📋 نسخ</button>
+        <button class="btn btn-ghost" onclick="saveToBank()">💾 حفظ</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ EXERCISES GENERATOR ═══ -->
+<section class="page" id="page-exercises">
+  <div class="page-header">
+    <div class="page-title">📄 مولد ورقة التمارين<div class="sub">ورقة تمارين جاهزة للطباعة أو الإرسال للطلاب</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">⚙️ إعدادات الورقة</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="form-row"><label>الموضوع</label><input type="text" id="ex2-topic" placeholder="مثال: المشتقات الجزئية"></div>
+        <div class="form-grid">
+          <div class="form-row"><label>المستوى</label>
+            <select id="ex2-level"><option>سهل</option><option selected>متوسط</option><option>صعب</option><option>مختلط</option></select>
+          </div>
+          <div class="form-row"><label>عدد الأسئلة</label>
+            <select id="ex2-count"><option>5</option><option selected>10</option><option>15</option><option>20</option></select>
+          </div>
+        </div>
+        <div class="form-row"><label>أنواع الأسئلة</label>
+          <select id="ex2-types">
+            <option>اختيار من متعدد فقط</option>
+            <option>أسئلة مقالية فقط</option>
+            <option selected>مختلط (MCQ + مقالي)</option>
+            <option>إثباتات رياضية</option>
+            <option>مسائل تطبيقية</option>
+          </select>
+        </div>
+        <div class="form-row"><label>تضمين الحلول؟</label>
+          <select id="ex2-solutions"><option value="no">بدون حلول (للطالب)</option><option value="yes">مع الحلول الكاملة (للمراجعة)</option><option value="hints">مع تلميحات فقط</option></select>
+        </div>
+        <div class="form-row"><label>تعليمات خاصة (اختياري)</label><textarea id="ex2-extra" placeholder="مثال: ركز على الأخطاء الشائعة، أضف مسألة حياتية واحدة..."></textarea></div>
+        <button class="btn btn-acc" onclick="generateExercises()" id="btn-ex2" style="width:100%">📄 ولّد الورقة</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📄 ورقة التمارين</div>
+      <div id="exercises-output" class="output-box empty" style="min-height:300px">اضبط الإعدادات وولّد الورقة</div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="copyOutput('exercises-output')">📋 نسخ</button>
+        <button class="btn btn-ghost" onclick="printExercises()">🖨️ طباعة</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ HASHTAGS ═══ -->
+<section class="page" id="page-hashtags">
+  <div class="page-header">
+    <div class="page-title">🏷️ مصنع الهاشتاجات الذكية<div class="sub">هاشتاجات مخصصة لكل منصة — مش نفس القائمة للكل</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">⚙️ إعدادات</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="form-row"><label>موضوع الفيديو أو الكونتنت</label><input type="text" id="ht-topic" placeholder="مثال: شرح المشتقات للثانوية العامة"></div>
+        <div class="form-row"><label>المنصة</label>
+          <select id="ht-platform">
+            <option value="all">كل المنصات (مخصص لكل واحدة)</option>
+            <option value="youtube">يوتيوب فقط</option>
+            <option value="tiktok">تيك توك فقط</option>
+            <option value="instagram">إنستغرام فقط</option>
+            <option value="facebook">فيسبوك فقط</option>
+          </select>
+        </div>
+        <div class="form-row"><label>اللغة</label>
+          <select id="ht-lang"><option value="ar">عربي فقط</option><option value="mix">عربي + إنجليزي</option><option value="en">إنجليزي فقط</option></select>
+        </div>
+        <button class="btn btn-acc" onclick="generateHashtags()" id="btn-ht" style="width:100%">🏷️ ولّد الهاشتاجات</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏷️ الهاشتاجات المُولَّدة</div>
+      <div id="ht-output" class="output-box empty">اختار الموضوع والمنصة وابدأ</div>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('ht-output')">📋 نسخ الكل</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COMMENT REPLIES ═══ -->
+<section class="page" id="page-replies">
+  <div class="page-header">
+    <div class="page-title">💬 مولد الردود الذكية<div class="sub">ردود بأسلوب نيوتن تبني الولاء وتشجع التفاعل</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">📥 التعليق أو السؤال</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="form-row"><label>الصق التعليق هنا</label><textarea id="rep-comment" placeholder="مثال: مش فاهم الخطوة التانية في الحل، ممكن تشرح تاني؟" style="min-height:100px"></textarea></div>
+        <div class="form-row"><label>نوع التعليق</label>
+          <select id="rep-type">
+            <option>سؤال علمي محتاج شرح</option>
+            <option>مدح وشكر</option>
+            <option>انتقاد أو شكوى</option>
+            <option>تحدي أو استفزاز</option>
+            <option>طلب موضوع جديد</option>
+            <option>سؤال عن حصص خاصة</option>
+          </select>
+        </div>
+        <div class="form-row"><label>المنصة</label>
+          <select id="rep-platform"><option>يوتيوب</option><option>تيك توك</option><option>فيسبوك</option><option>إنستغرام</option></select>
+        </div>
+        <div class="form-row"><label>عدد الردود المطلوبة</label>
+          <select id="rep-count"><option value="1">رد واحد</option><option value="3" selected>3 ردود مختلفة</option><option value="5">5 ردود</option></select>
+        </div>
+        <button class="btn btn-acc" onclick="generateReply()" id="btn-rep" style="width:100%">💬 ولّد الردود</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">💬 الردود المُولَّدة</div>
+      <div id="rep-output" class="output-box empty" style="min-height:200px">الصق تعليق وولّد الردود</div>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('rep-output')">📋 نسخ</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONTENT MAP ═══ -->
+<section class="page" id="page-content-map">
+  <div class="page-header">
+    <div class="page-title">🗺️ خريطة المحتوى التعليمي<div class="sub">شوف الفجوات في محتواك دفعة واحدة</div></div>
+    <button class="btn btn-acc" onclick="analyzeContentMap()" id="btn-cmap">🤖 تحليل وكشف الفجوات</button>
+  </div>
+  <div class="card">
+    <div class="card-title">📥 أضف مواضيعك المغطاة</div>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <input type="text" id="cmap-topic" placeholder="موضوع غطيته (مثال: المشتقة الأولى)" style="flex:1">
+      <select id="cmap-status" style="width:150px">
+        <option value="done">✅ تم التغطية</option>
+        <option value="partial">🔶 جزئي</option>
+        <option value="planned">📌 مخطط</option>
+      </select>
+      <input type="text" id="cmap-views" placeholder="مشاهدات" style="width:100px">
+      <button class="btn btn-acc" onclick="addContentMapItem()">+</button>
+    </div>
+    <div class="form-row" style="margin-bottom:10px">
+      <label>أو الصق قائمة بمواضيعك (كل موضوع في سطر)</label>
+      <textarea id="cmap-bulk" placeholder="المشتقة الأولى&#10;التكامل المحدد&#10;نظرية الوسيط&#10;المتتاليات الحسابية..." style="min-height:80px"></textarea>
+      <button class="btn btn-ghost" onclick="bulkAddTopics()" style="margin-top:6px">📥 إضافة الكل</button>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">🗺️ خريطة المواضيع</div>
+      <div id="cmap-list" style="display:flex;flex-direction:column;gap:6px">
+        <div class="alert info">أضف مواضيعك للبدء</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🤖 الفجوات والتوصيات</div>
+      <div id="cmap-ai" class="output-box empty">اضغط "تحليل وكشف الفجوات"</div>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="copyOutput('cmap-ai')">📋 نسخ</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ AB TEST ═══ -->
+<section class="page" id="page-ab-test">
+  <div class="page-header">
+    <div class="page-title">🖼️ مختبر الـ Thumbnails A/B<div class="sub">الـ Thumbnail أهم من الفيديو نفسه — اختبر واعرف الأفضل</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">➕ أضف اختبار جديد</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
+      <div class="form-row"><label>عنوان الفيديو</label><input type="text" id="ab-title" placeholder="عنوان الفيديو..."></div>
+      <div class="form-row"><label>Thumbnail A (وصف)</label><input type="text" id="ab-a" placeholder="مثال: وجهي + علامة استفهام كبيرة"></div>
+      <div class="form-row"><label>Thumbnail B (وصف)</label><input type="text" id="ab-b" placeholder="مثال: معادلة ملونة + خلفية سوداء"></div>
+      <button class="btn btn-acc" onclick="addABTest()" style="margin-bottom:0;height:38px;padding:0 14px">+</button>
+    </div>
+  </div>
+  <div id="ab-list" style="display:flex;flex-direction:column;gap:12px">
+    <div class="alert info">أضف اختبارات Thumbnail للبدء</div>
+  </div>
+  <div class="card" id="ab-ai-card" style="display:none">
+    <div class="card-title">🤖 تحليل Gemini لنتائج الـ A/B</div>
+    <div id="ab-ai" class="output-box empty">—</div>
+    <button class="btn btn-acc" onclick="analyzeAB()" style="margin-top:10px" id="btn-ab-analyze">🔍 حلّل النتائج</button>
+  </div>
+</section>
+
+<!-- ═══ COLLAB RADAR ═══ -->
+<section class="page" id="page-collab">
+  <div class="page-header">
+    <div class="page-title">🤝 رادار التعاون<div class="sub">قنوات جمهورها بيتقاطع مع جمهورك = Collab ناجح</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">⚙️ بياناتك أنت</div>
+    <div class="form-grid">
+      <div class="form-row"><label>إجمالي متابعيك</label><input type="text" id="col-my-subs" placeholder="45000"></div>
+      <div class="form-row"><label>متوسط مشاهداتك</label><input type="text" id="col-my-views" placeholder="50000"></div>
+      <div class="form-row"><label>نوع جمهورك</label><input type="text" id="col-my-audience" placeholder="مثال: طلاب ثانوي 15-20 سنة، مصر والخليج"></div>
+      <div class="form-row"><label>أسلوبك</label><input type="text" id="col-my-style" placeholder="مثال: شرح بعامية مصرية، تحديات، Hooks صادمة"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">➕ أضف قناة محتملة للتعاون</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;align-items:end">
+      <div class="form-row"><label>اسم القناة</label><input type="text" id="col-ch-name" placeholder="اسم القناة"></div>
+      <div class="form-row"><label>متابعين</label><input type="text" id="col-ch-subs" placeholder="100000"></div>
+      <div class="form-row"><label>نوع المحتوى</label><input type="text" id="col-ch-type" placeholder="مثال: رياضيات جامعية"></div>
+      <div class="form-row"><label>جمهورها</label><input type="text" id="col-ch-audience" placeholder="مثال: طلاب جامعة"></div>
+      <button class="btn btn-acc" onclick="addCollabChannel()" style="height:38px;padding:0 12px;margin-bottom:0">+</button>
+    </div>
+  </div>
+  <div id="collab-list" style="display:flex;flex-direction:column;gap:10px">
+    <div class="alert info">أضف قنوات محتملة للتحليل</div>
+  </div>
+  <div class="card" id="collab-ai-card" style="display:none">
+    <div class="card-title">🤖 توصيات التعاون</div>
+    <div id="collab-ai" class="output-box empty">—</div>
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button class="btn btn-acc" onclick="analyzeCollab()" id="btn-collab">🤝 حلّل فرص التعاون</button>
+      <button class="btn btn-ghost" onclick="copyOutput('collab-ai')">📋 نسخ</button>
     </div>
   </div>
 </section>
