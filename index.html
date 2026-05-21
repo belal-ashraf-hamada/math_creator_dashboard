@@ -2423,20 +2423,7 @@ async function calcIncome() {
   const total = ytIncome + lessonsIncome + courseNum;
   const outEl = document.getElementById('income-output');
   outEl.classList.remove('empty');
-  outEl.textContent = `💰 تفاصيل دخلك الشهري:
-
-▶ يوتيوب (${ytViews.toLocaleString()} مشاهدة × $${rpm} RPM):
-   $${ytIncome.toFixed(0)} = ~${Math.round(ytIncome*50).toLocaleString('ar')} جنيه
-
-📚 حصص خاصة (${students} طالب × ${price}ج × ${sessions} حصة):
-   ${lessonsIncome.toLocaleString('ar')} جنيه
-${hasCourse?`
-🎓 كورسات مسجلة:
-   ~${courseNum.toLocaleString('ar')} جنيه
-`:''}
-══════════════
-💰 الإجمالي الشهري:
-   ~${Math.round(total*50+lessonsIncome).toLocaleString('ar')} جنيه`;
+  outEl.textContent = '💰 تفاصيل دخلك الشهري:\n\n▶ يوتيوب (' + ytViews.toLocaleString() + ' مشاهدة × $' + rpm + ' RPM):\n   $' + ytIncome.toFixed(0) + ' = ~' + Math.round(ytIncome*50).toLocaleString('ar') + ' جنيه\n\n📚 حصص خاصة (' + students + ' طالب × ' + price + 'ج × ' + sessions + ' حصة):\n   ' + lessonsIncome.toLocaleString('ar') + ' جنيه' + (hasCourse ? '\n🎓 كورسات مسجلة:\n   ~' + courseNum.toLocaleString('ar') + ' جنيه' : '') + '\n══════════════\n💰 الإجمالي الشهري:\n   ~' + Math.round(total*50+lessonsIncome).toLocaleString('ar') + ' جنيه';
   const growEl = document.getElementById('income-growth');
   growEl.classList.remove('empty');
   growEl.textContent = `🚀 لو ضاعفت متابعيك:
@@ -2714,20 +2701,21 @@ function bulkAddTopics() {
   renderContentMap();
 }
 
+function removeContentItem(id) {
+  contentMap = contentMap.filter(function(x){ return x.id !== id; });
+  localStorage.setItem('content_map', JSON.stringify(contentMap));
+  renderContentMap();
+}
+
 function renderContentMap() {
   const el = document.getElementById('cmap-list');
   if(!contentMap.length){el.innerHTML='<div class="alert info">أضف مواضيعك للبدء</div>';return;}
   const icons = {done:'✅',partial:'🔶',planned:'📌'};
   const labels = {done:'مغطى',partial:'جزئي',planned:'مخطط'};
-  el.innerHTML = contentMap.map(item=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--s2);border-radius:8px;gap:8px">
-      <span style="font-size:13px">${icons[item.status]} ${item.topic}</span>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-        ${item.views?`<span style="font-size:11px;color:var(--mut)">${item.views.toLocaleString('ar')} 👁</span>`:''}
-        <span style="font-size:10px;color:var(--mut)">${labels[item.status]}</span>
-        <button onclick="contentMap=contentMap.filter(x=>x.id!=${item.id});localStorage.setItem('content_map',JSON.stringify(contentMap));renderContentMap()" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button>
-      </div>
-    </div>`).join('');
+  el.innerHTML = contentMap.map(function(item){
+    const viewsHtml = item.views ? '<span style="font-size:11px;color:var(--mut)">' + item.views.toLocaleString('ar') + ' 👁</span>' : '';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--s2);border-radius:8px;gap:8px"><span style="font-size:13px">' + icons[item.status] + ' ' + item.topic + '</span><div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' + viewsHtml + '<span style="font-size:10px;color:var(--mut)">' + labels[item.status] + '</span><button onclick="removeContentItem(' + item.id + ')" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button></div></div>';
+  }).join('');
 }
 
 async function analyzeContentMap() {
@@ -2768,40 +2756,14 @@ function addABTest() {
 function renderABTests() {
   const el = document.getElementById('ab-list');
   const aiCard = document.getElementById('ab-ai-card');
-  if(!abTests.length){el.innerHTML='<div class="alert info">أضف اختبارات Thumbnail للبدء</div>';aiCard.style.display='none';return;}
-  aiCard.style.display='block';
-  el.innerHTML = abTests.map(t=>`
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-weight:700;font-size:14px">${t.title}</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <span style="font-size:11px;color:var(--mut)">${t.date}</span>
-          <button onclick="removeABTest(${t.id})" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid ${t.winner==='A'?'var(--acc3)':'var(--b2)'}">
-          <div style="font-size:12px;font-weight:700;color:var(--acc);margin-bottom:6px">🅰️ Thumbnail A</div>
-          <div style="font-size:12px;margin-bottom:8px">${t.a}</div>
-          <div style="display:flex;gap:8px">
-            <input type="text" placeholder="مشاهدات" id="ab-a-views-${t.id}" value="${t.viewsA||''}" style="width:80px;padding:4px 6px;font-size:11px">
-            <input type="text" placeholder="CTR %" id="ab-a-ctr-${t.id}" value="${t.ctrA||''}" style="width:70px;padding:4px 6px;font-size:11px">
-          </div>
-        </div>
-        <div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid ${t.winner==='B'?'var(--acc3)':'var(--b2)'}">
-          <div style="font-size:12px;font-weight:700;color:var(--acc2);margin-bottom:6px">🅱️ Thumbnail B</div>
-          <div style="font-size:12px;margin-bottom:8px">${t.b}</div>
-          <div style="display:flex;gap:8px">
-            <input type="text" placeholder="مشاهدات" id="ab-b-views-${t.id}" value="${t.viewsB||''}" style="width:80px;padding:4px 6px;font-size:11px">
-            <input type="text" placeholder="CTR %" id="ab-b-ctr-${t.id}" value="${t.ctrB||''}" style="width:70px;padding:4px 6px;font-size:11px">
-          </div>
-        </div>
-      </div>
-      <div style="margin-top:10px;display:flex;gap:8px">
-        <button class="btn btn-ghost" onclick="saveABResult(${t.id})" style="font-size:12px">💾 حفظ النتائج</button>
-        ${t.winner?`<span style="font-size:12px;color:var(--acc3);padding:6px 10px;background:var(--acc3)18;border-radius:8px">🏆 الفائز: Thumbnail ${t.winner}</span>`:''}
-      </div>
-    </div>`).join('');
+  if(!abTests.length){el.innerHTML='<div class="alert info">أضف اختبارات Thumbnail للبدء</div>';if(aiCard)aiCard.style.display='none';return;}
+  if(aiCard)aiCard.style.display='block';
+  el.innerHTML = abTests.map(function(t){
+    const winnerBadge = t.winner ? '<span style="font-size:12px;color:var(--acc3);padding:6px 10px;background:#38ef7d18;border-radius:8px">🏆 الفائز: Thumbnail ' + t.winner + '</span>' : '';
+    const borderA = t.winner==='A' ? 'var(--acc3)' : 'var(--b2)';
+    const borderB = t.winner==='B' ? 'var(--acc3)' : 'var(--b2)';
+    return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-weight:700;font-size:14px">' + t.title + '</div><div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:var(--mut)">' + t.date + '</span><button onclick="removeABTest(' + t.id + ')" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid ' + borderA + '"><div style="font-size:12px;font-weight:700;color:var(--acc);margin-bottom:6px">🅰️ Thumbnail A</div><div style="font-size:12px;margin-bottom:8px">' + t.a + '</div><div style="display:flex;gap:8px"><input type="text" placeholder="مشاهدات" id="ab-a-views-' + t.id + '" value="' + (t.viewsA||'') + '" style="width:80px;padding:4px 6px;font-size:11px"><input type="text" placeholder="CTR %" id="ab-a-ctr-' + t.id + '" value="' + (t.ctrA||'') + '" style="width:70px;padding:4px 6px;font-size:11px"></div></div><div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid ' + borderB + '"><div style="font-size:12px;font-weight:700;color:var(--acc2);margin-bottom:6px">🅱️ Thumbnail B</div><div style="font-size:12px;margin-bottom:8px">' + t.b + '</div><div style="display:flex;gap:8px"><input type="text" placeholder="مشاهدات" id="ab-b-views-' + t.id + '" value="' + (t.viewsB||'') + '" style="width:80px;padding:4px 6px;font-size:11px"><input type="text" placeholder="CTR %" id="ab-b-ctr-' + t.id + '" value="' + (t.ctrB||'') + '" style="width:70px;padding:4px 6px;font-size:11px"></div></div></div><div style="margin-top:10px;display:flex;gap:8px"><button class="btn btn-ghost" onclick="saveABResult(' + t.id + ')" style="font-size:12px">💾 حفظ النتائج</button>' + winnerBadge + '</div></div>';
+  }).join('');
 }
 
 function saveABResult(id) {
@@ -2857,14 +2819,9 @@ function renderCollabList() {
   const aiCard = document.getElementById('collab-ai-card');
   if(!collabChannels.length){el.innerHTML='<div class="alert info">أضف قنوات محتملة للتحليل</div>';if(aiCard)aiCard.style.display='none';return;}
   if(aiCard)aiCard.style.display='block';
-  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">${collabChannels.map(ch=>`
-    <div class="script-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div>
-        <div style="font-weight:700;font-size:13px">📺 ${ch.name}</div>
-        <div style="font-size:11px;color:var(--mut)">${ch.type} · ${ch.audience} · ${(ch.subs/1000).toFixed(1)}K مشترك</div>
-      </div>
-      <button onclick="collabChannels=collabChannels.filter(x=>x.id!=${ch.id});localStorage.setItem('collab_channels',JSON.stringify(collabChannels));renderCollabList()" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button>
-    </div>`).join('')}</div>`;
+  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">' + collabChannels.map(function(ch){
+    return '<div class="script-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px"><div><div style="font-weight:700;font-size:13px">📺 ' + ch.name + '</div><div style="font-size:11px;color:var(--mut)">' + ch.type + ' · ' + ch.audience + ' · ' + (ch.subs/1000).toFixed(1) + 'K مشترك</div></div><button onclick="collabChannels=collabChannels.filter(function(x){return x.id!=' + ch.id + '});localStorage.setItem('collab_channels',JSON.stringify(collabChannels));renderCollabList()" style="background:none;border:none;color:var(--mut);cursor:pointer">✕</button></div>';
+  }).join('') + '</div>';
 }
 
 async function analyzeCollab() {
@@ -3054,23 +3011,12 @@ function renderTopVideos() {
   const el = document.getElementById('top-videos-table');
   if (sorted.length === 0) { el.innerHTML = '<div class="alert info">أضف فيديوهاتك للبدء</div>'; return; }
   const platClass = {يوتيوب:'yt',تيك توك:'tt',فيسبوك:'fb',إنستغرام:'ig'};
-  el.innerHTML = `<table class="vtable">
-    <tr><th>#</th><th>العنوان</th><th>المنصة</th><th>مشاهدات</th><th>لايكات</th><th>تعليقات</th><th>معدل التفاعل</th><th>المدة</th><th></th></tr>
-    ${sorted.map((v,i) => {
-      const sc = v.engRate >= 5 ? 'high' : v.engRate >= 2 ? 'mid' : 'low';
-      return `<tr>
-        <td><span class="score ${sc}">${i+1}</span></td>
-        <td style="font-weight:600;max-width:220px;font-size:12px">${v.title}</td>
-        <td><span class="plat ${platClass[v.platform]||'yt'}">${v.platform}</span></td>
-        <td>${v.views.toLocaleString('ar')}</td>
-        <td>${v.likes.toLocaleString('ar')}</td>
-        <td>${v.comments.toLocaleString('ar')}</td>
-        <td><strong style="color:${v.engRate>=5?'var(--acc3)':v.engRate>=2?'var(--gold)':'var(--acc2)'}">${v.engRate}%</strong></td>
-        <td>${v.duration} د</td>
-        <td><button onclick="removeVideo(${v.id})" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:16px">✕</button></td>
-      </tr>`;
-    }).join('')}
-  </table>`;
+  let rows = sorted.map(function(v,i) {
+    const sc = v.engRate >= 5 ? 'high' : v.engRate >= 2 ? 'mid' : 'low';
+    const engColor = v.engRate>=5?'var(--acc3)':v.engRate>=2?'var(--gold)':'var(--acc2)';
+    return '<tr><td><span class="score ' + sc + '">' + (i+1) + '</span></td><td style="font-weight:600;max-width:220px;font-size:12px">' + v.title + '</td><td><span class="plat ' + (platClass[v.platform]||'yt') + '">' + v.platform + '</span></td><td>' + v.views.toLocaleString('ar') + '</td><td>' + v.likes.toLocaleString('ar') + '</td><td>' + v.comments.toLocaleString('ar') + '</td><td><strong style="color:' + engColor + '">' + v.engRate + '%</strong></td><td>' + v.duration + ' د</td><td><button onclick="removeVideo(' + v.id + ')" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:16px">✕</button></td></tr>';
+  }).join('');
+  el.innerHTML = '<table class="vtable"><tr><th>#</th><th>العنوان</th><th>المنصة</th><th>مشاهدات</th><th>لايكات</th><th>تعليقات</th><th>معدل التفاعل</th><th>المدة</th><th></th></tr>' + rows + '</table>';
 }
 
 function removeVideo(id) {
@@ -3294,59 +3240,17 @@ function renderCompetitors() {
   const el = document.getElementById('competitors-list');
   if (competitors.length === 0) { el.innerHTML = '<div class="alert info">أضف قنوات للمراقبة للبدء</div>'; return; }
   const spyCard = document.getElementById('spy-ai-card');
-  if (spyCard) spyCard.style.display = competitors.length > 0 ? 'block' : 'none';
+  if (spyCard) spyCard.style.display = 'block';
 
-  el.innerHTML = competitors.map(comp => {
+  el.innerHTML = competitors.map(function(comp) {
     const d = comp.data;
-    const topVid = d?.videos?.length > 0 ? [...d.videos].sort((a,b)=>b.views-a.views)[0] : null;
-    return `<div class="card" id="comp-card-${comp.id}">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;align-items:center;gap:10px">
-          ${d?.avatar ? `<img src="${d.avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover">` : '<div style="width:36px;height:36px;border-radius:50%;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:18px">📺</div>'}
-          <div>
-            <div style="font-weight:700;font-size:14px">${comp.name}</div>
-            ${d ? `<div style="font-size:11px;color:var(--mut)">محدّث: ${d.updatedAt}</div>` : ''}
-          </div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button onclick="fetchCompetitor(${comp.id})" class="btn btn-ghost" style="font-size:11px;padding:5px 10px">🔄 تحديث</button>
-          <button onclick="removeCompetitor(${comp.id})" class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:var(--acc2)">✕ حذف</button>
-        </div>
-      </div>
-      <div class="comp-body">
-        ${!d ? '<span style="font-size:12px;color:var(--mut)">جاري الجلب...</span>' : `
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
-          <div class="stat" style="padding:10px">
-            <div class="label" style="font-size:10px">👥 مشتركين</div>
-            <div class="val" style="font-size:20px">${(d.subs/1000).toFixed(1)}K</div>
-          </div>
-          <div class="stat" style="padding:10px">
-            <div class="label" style="font-size:10px">👁 إجمالي مشاهدات</div>
-            <div class="val" style="font-size:20px">${(d.totalViews/1000000).toFixed(1)}M</div>
-          </div>
-          <div class="stat" style="padding:10px">
-            <div class="label" style="font-size:10px">📹 فيديوهات</div>
-            <div class="val" style="font-size:20px">${d.videoCount}</div>
-          </div>
-        </div>
-        ${topVid ? `<div style="margin-bottom:10px">
-          <div style="font-size:11px;color:var(--mut);margin-bottom:4px">🔥 أكتر فيديو مشاهدة (آخر 10):</div>
-          <a href="${topVid.url}" target="_blank" style="font-size:13px;font-weight:600;color:var(--acc);text-decoration:none">${topVid.title}</a>
-          <div style="font-size:11px;color:var(--mut);margin-top:2px">${topVid.views.toLocaleString('ar')} مشاهدة · ${topVid.likes.toLocaleString('ar')} لايك</div>
-        </div>` : ''}
-        <details style="cursor:pointer">
-          <summary style="font-size:12px;color:var(--mut);margin-bottom:8px">📋 آخر ${d.videos.length} فيديوهات</summary>
-          ${d.videos.map(v=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--b1);flex-wrap:wrap;gap:4px">
-            <a href="${v.url}" target="_blank" style="font-size:12px;color:var(--txt);text-decoration:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.title}</a>
-            <div style="display:flex;gap:8px;flex-shrink:0">
-              <span style="font-size:11px;color:var(--mut)">${v.date}</span>
-              <span style="font-size:11px;color:var(--acc3)">${(v.views/1000).toFixed(1)}K 👁</span>
-              <span style="font-size:11px;color:var(--gold)">${(v.likes/1000).toFixed(1)}K 👍</span>
-            </div>
-          </div>`).join('')}
-        </details>`}
-      </div>
-    </div>`;
+    const topVid = d && d.videos && d.videos.length > 0 ? [...d.videos].sort((a,b)=>b.views-a.views)[0] : null;
+    const avatarHtml = d && d.avatar ? '<img src="' + d.avatar + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover">' : '<div style="width:36px;height:36px;border-radius:50%;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:18px">📺</div>';
+    const updatedHtml = d ? '<div style="font-size:11px;color:var(--mut)">محدّث: ' + d.updatedAt + '</div>' : '';
+    const topVidHtml = topVid ? '<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--mut);margin-bottom:4px">🔥 أكتر فيديو مشاهدة:</div><a href="' + topVid.url + '" target="_blank" style="font-size:13px;font-weight:600;color:var(--acc);text-decoration:none">' + topVid.title + '</a><div style="font-size:11px;color:var(--mut);margin-top:2px">' + topVid.views.toLocaleString('ar') + ' مشاهدة</div></div>' : '';
+    const videosHtml = d && d.videos ? d.videos.map(function(v){ return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--b1);flex-wrap:wrap;gap:4px"><a href="' + v.url + '" target="_blank" style="font-size:12px;color:var(--txt);text-decoration:none;flex:1">' + v.title + '</a><div style="display:flex;gap:8px;flex-shrink:0"><span style="font-size:11px;color:var(--mut)">' + v.date + '</span><span style="font-size:11px;color:var(--acc3)">' + (v.views/1000).toFixed(1) + 'K 👁</span></div></div>'; }).join('') : '';
+    const statsHtml = d ? '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px"><div class="stat" style="padding:10px"><div class="label" style="font-size:10px">👥 مشتركين</div><div class="val" style="font-size:20px">' + (d.subs/1000).toFixed(1) + 'K</div></div><div class="stat" style="padding:10px"><div class="label" style="font-size:10px">👁 مشاهدات</div><div class="val" style="font-size:20px">' + (d.totalViews/1000000).toFixed(1) + 'M</div></div><div class="stat" style="padding:10px"><div class="label" style="font-size:10px">📹 فيديوهات</div><div class="val" style="font-size:20px">' + d.videoCount + '</div></div></div>' + topVidHtml + '<details style="cursor:pointer"><summary style="font-size:12px;color:var(--mut);margin-bottom:8px">📋 آخر ' + d.videos.length + ' فيديوهات</summary>' + videosHtml + '</details>' : '<span style="font-size:12px;color:var(--mut)">جاري الجلب...</span>';
+    return '<div class="card" id="comp-card-' + comp.id + '"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px"><div style="display:flex;align-items:center;gap:10px">' + avatarHtml + '<div><div style="font-weight:700;font-size:14px">' + comp.name + '</div>' + updatedHtml + '</div></div><div style="display:flex;gap:8px"><button onclick="fetchCompetitor(' + comp.id + ')" class="btn btn-ghost" style="font-size:11px;padding:5px 10px">🔄 تحديث</button><button onclick="removeCompetitor(' + comp.id + ')" class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:var(--acc2)">✕ حذف</button></div></div><div class="comp-body">' + statsHtml + '</div></div>';
   }).join('');
 }
 
@@ -3370,7 +3274,7 @@ async function analyzeCompetitors() {
   const str = withData.map(c => {
     const top3 = [...c.data.videos].sort((a,b)=>b.views-a.views).slice(0,3);
     return `قناة: ${c.name} (${(c.data.subs/1000).toFixed(1)}K مشترك)
-أكتر فيديوهات: ${top3.map(v=>`"${v.title}" (${(v.views/1000).toFixed(1)}K مشاهدة)`).join(' | ')}`;
+أكتر فيديوهات: ${top3.map(function(v){ return '"' + v.title + '" (' + (v.views/1000).toFixed(1) + 'K مشاهدة)'; }).join(' | ')}`;
   }).join('
 
 ');
